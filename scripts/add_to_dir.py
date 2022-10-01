@@ -1,20 +1,26 @@
 import os, shutil
 
 curdir = os.getcwd()
-mypath = 'T:\\'
+file_extensions = [".mkv", ".mp4", ".avi"]
 files = []
-for (dirpath, dirnames, filenames) in os.walk(curdir):
-    files.extend(filenames)
-
-for f in files:
-    print(f)
-    if (f == ".DS_Store") or (f == "._.DS_Store"):
-        print("pass")
+for entry in os.scandir(curdir):
+    if entry.is_dir():
+        continue
     else:
+        files.append(entry.name)
+        
+
+# print("......",curdir)
+for f in files:
+    if [ele for ele in file_extensions if(ele in f)]:
         newpath = curdir + f[:-11]
         print(newpath)
-        os.mkdir(newpath)
-        src = curdir + '\\' + f
-        dst = newpath + '\\' + f
-        shutil.move(curdir + '\\' + f, newpath + '\\' + f)
+        # src = curdir + '\\' + f
+        src = dst = os.path.join(curdir, f) 
+        # dst = newpath + '\\' + f        
+        dst = os.path.join(newpath, f)
         print("Moving: %s to %s" % (src, dst))
+        os.mkdir(newpath)
+        shutil.move(curdir + '\\' + f, newpath + '\\' + f)
+
+    print("\n")
