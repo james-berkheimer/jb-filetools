@@ -3,10 +3,12 @@ import os, shutil, traceback, pathlib
 import re
 
 def getYear(target_string):
-    pattern = re.compile(r"(\d{4})")
-    for match in pattern.finditer(target_string):
-        if int(match.group(1)) in range(1950,2030):
-            return (match.group(1))
+    matches = re.findall(r"[0-9]{4}", target_string)
+    filteredMatches = []
+    for m in matches:
+        if int(m) in range(1900,2030):
+            filteredMatches.append(m)
+    return(filteredMatches[-1])  
     
 
 curdir = os.getcwd()
