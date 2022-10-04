@@ -1,2 +1,2 @@
-"python" "C:\Users\James\Code\python\jb_file_tools\scripts\clean_empy_directories.py"
+"python" "C:\Users\James\Code\python\jb-file-tools\src\file_tools\clean_empy_directories.py"
 pause
