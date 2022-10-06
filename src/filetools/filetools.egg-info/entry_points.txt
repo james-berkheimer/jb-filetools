@@ -1,0 +1,2 @@
+[console_scripts]
+filetools = main:main

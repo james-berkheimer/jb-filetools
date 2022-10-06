@@ -1,2 +1,2 @@
-"python" "C:\Users\James\Code\python\jb-file-tools\src\file_tools\add_to_dir.py"
+"python" "C:\Users\James\Code\python\jb-filetools\src\filetools\utils\moving\add_to_dir.py"
 pause
