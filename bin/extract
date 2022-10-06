@@ -1,9 +1,0 @@
-#! /usr/bin/python
-
-import os
-# import file_tools.extract_file as extract
-
-# print("Hello World")
-
-curdir = os.getcwd()
-# extract(curdir)
