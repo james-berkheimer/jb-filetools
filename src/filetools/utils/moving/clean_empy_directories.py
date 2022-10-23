@@ -18,6 +18,10 @@ for d in dirs:
         for f in filenames:
             print("  ",f)
             if [ele for ele in file_extensions if(ele in f)]:
+                if "sample-" in f:
+                    print("   Found file but it's a sample....deleting:", f)
+                    delete = True
+                    break
                 print("   Found file....", f)
                 delete = False
                 pass
