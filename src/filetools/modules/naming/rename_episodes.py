@@ -40,6 +40,11 @@ for f in os.listdir(curdir):
             print("This is a directory....passing")
             pass
         else:
+            fk, hdr = "", ""
+            if "2160p" in f.split('.'):
+                fk = "-4K"
+            if "HDR" in f.split('.'):
+                hdr = "-HDR"
             season_episode = getSeasonEpisode(f)
             try:
                 season_episode = getSeasonEpisode(f)
@@ -48,8 +53,7 @@ for f in os.listdir(curdir):
                 print(details)
                 episode_name = details[0].replace(".", " ")
                 file_extension = details[1].split(".")[-1]
-                new_name = episode_name + "- " + season_episode.upper(
-                ) + "." + file_extension
+                new_name = f"{episode_name} - {season_episode.upper()}{fk}{hdr}.{file_extension}"
                 print(new_name)
                 os.rename(os.path.join(curdir, f), os.path.join(curdir, new_name))
             except:
