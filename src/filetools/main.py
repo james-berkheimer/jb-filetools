@@ -10,7 +10,7 @@
 # Imports
 # --------------------------------------------------------------------------------
 import argparse
-import sys
+import os, sys
 import modules.const as const
 
 # --------------------------------------------------------------------------------
@@ -22,41 +22,37 @@ def main():
     '''
     print("I am Main()")
 
-    parser = argparse.ArgumentParser(description="These flags are how to run individual tool")
+    parser = argparse.ArgumentParser(prog="filetools", description="Let's parse some files")
 
     parser.add_argument(
         "-e",
         "--extractfiles",
         action='store',
-        required=False,
+        default=os.getcwd(),
         help="Extract specified video files from subdirectories in the current directory")
 
     parser.add_argument(
         "-re",
         "--rename-episodes",
-        action='store',
-        required=False,
+        action='store',,
         help="Rename eposidic video files")
 
     parser.add_argument(
         "-rm",
         "--rename-movies",
         action='store',
-        required=False,
         help="Rename movie video files")
 
     parser.add_argument(
         "-a2d",
         "--add-to-dir",
         action='store',
-        required=False,
         help="Moves renamed movie files into a directory of the same name")
 
     parser.add_argument(
         "-ded",
         "--delete-empty-dirs",
         action='store',
-        required=False,
         help="Deletes all subdirectories that don't hold a specified video file")
 
 
