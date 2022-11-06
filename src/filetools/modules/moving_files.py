@@ -22,7 +22,7 @@ file_extentions_to_clean = [".mkv", ".mp4", ".part", ".avi"]
 
 def add_to_dir(curdir:str):
     files = []
-    tmpdir = make_temp_dir(os.path.join(curdir, "_tmp"))
+    tmpdir = __make_temp_dir(os.path.join(curdir, "_tmp"))
     for entry in os.scandir(curdir):
         if entry.is_dir():
             continue
@@ -49,10 +49,10 @@ def add_to_dir(curdir:str):
 
 def clean_empty_dirs(curdir):
     dirsToDelete = []
-    for d in parse_dirs(curdir):
+    for d in __parse_dirs(curdir):
         delete = True
         print("Directory:",d)
-        for f in parse_files(d):
+        for f in __parse_files(d):
             print("  ",f)
             if any(x in f for x in file_extentions_to_clean):
                 if "sample-" in f:
@@ -82,11 +82,11 @@ def clean_empty_dirs(curdir):
                 print("Error: %s : %s" % (d, e.strerror))
 
 def extract_files(curdir:str):
-    for d in parse_dirs(curdir):
+    for d in __parse_dirs(curdir):
         num_files = 0
         to_extract = []
         still_downloading = False
-        for f in parse_files(d):
+        for f in __parse_files(d):
             if '.part' in f:
                 print("Found .part file....passing")
                 still_downloading = True
@@ -112,21 +112,21 @@ def extract_files(curdir:str):
 # Private API
 # --------------------------------------------------------------------------------
 
-def make_temp_dir(tmpdir):
+def __make_temp_dir(tmpdir):
     if os.path.exists(tmpdir):
         pass
     else:
         os.mkdir(tmpdir)
     return(tmpdir)
 
-def parse_dirs(curdir):
+def __parse_dirs(curdir):
     print(f"Parsing directory: {curdir}")
     dirs = []
     for (dirpath, dirnames, filenames) in os.walk(curdir):
         dirs.extend(dirnames)
     return dirs
 
-def parse_files(dir):
+def __parse_files(dir):
     print(f"Parsing directory: {dir}")
     files = []
     for (dirpath, dirnames, filenames) in os.walk(dir):
