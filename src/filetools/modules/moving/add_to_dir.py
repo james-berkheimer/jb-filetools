@@ -2,10 +2,12 @@ import os, shutil, traceback
 
 curdir = os.getcwd()
 tmpDir = os.path.join(curdir, "_tmp")
+
 if os.path.exists(tmpDir):
     pass
 else:
     os.mkdir(tmpDir)
+    
 file_extensions = [".mkv", ".mp4", ".avi"]
 files = []
 for entry in os.scandir(curdir):
@@ -31,3 +33,5 @@ for f in files:
             print(traceback.format_exc())
 
     print("\n")
+
+
