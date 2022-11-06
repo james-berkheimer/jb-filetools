@@ -13,6 +13,7 @@ import argparse
 import os, sys, pathlib
 import modules.const as const
 import modules.moving_files as moving_files
+import modules.naming_files as naming_files
 import modules._testing.test as test
 
 # --------------------------------------------------------------------------------
@@ -84,7 +85,15 @@ def main():
 
     if "rename_episodes" in args:
         if os.path.isdir(args.extractfiles):
-            test.hello2(args.extractfiles)
+            # test.hello2(args.extractfiles)
+            naming_files.rename_episodes(args.rename_episodes)
+        else:
+            print(f"{args.extractfiles} is not a valid directory path")
+
+    if "rename_movies" in args:
+        if os.path.isdir(args.extractfiles):
+            # test.hello2(args.extractfiles)
+            naming_files.rename_movies(args.rename_movies)
         else:
             print(f"{args.extractfiles} is not a valid directory path")
    
