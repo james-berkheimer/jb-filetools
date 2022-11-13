@@ -2,79 +2,29 @@
 
 import os, shutil
 
-curdir = os.getcwd()
-dirs = []
-for (dirpath, dirnames, filenames) in os.walk(curdir):
-    dirs.extend(dirnames)
-    break
+root_dir = os.getcwd()
+video_file_extensions = [".mkv", ".mp4", ".avi"]
+file_excludes = [".part"]
 
-for d in dirs:
-    print(f"Directory: {d}")
-    for (dirpath, dirnames, filenames) in os.walk(d):
-        num_files = 0
-        to_extract = []
-        still_downloading = False
-        for f in filenames:
-            if '.part' in f:
-                print("Found .part file....passing")
-                still_downloading = True
-                break
-            else:
-                if '.mkv' in f or '.mp4' in f or '.avi' in f:
-                    num_files+=1
-                    print(f"   {os.path.join(curdir, d, f)}")
-                    to_extract.append(f)
-                else:
-                    pass
-        print(f"numfiles: {num_files}")
-        if num_files > 1 or still_downloading == True:
-            print("   This is either a series or still downloading")
+def dir_scan(scan_path:str, getfiles=False):
+    scan_obj = os.scandir(scan_path)
+    scan_output = []
+    for root_scan_entry in scan_obj:
+        if getfiles == False:
+            if root_scan_entry.is_dir():
+                scan_output.append(root_scan_entry)
         else:
-            print("...Extracting files")
-            for i in to_extract:
-                shutil.move(os.path.join(curdir, d, i), os.path.join(curdir, i))
-                    
+            if root_scan_entry.is_file():
+                scan_output.append(root_scan_entry)
+    scan_obj.close()
+    return scan_output
 
-def extract_files(curdir:str):
-    for d in parse_dirs(curdir):
-        num_files = 0
-        to_extract = []
-        still_downloading = False
-        for f in parse_files(d):
-            if '.part' in f:
-                print("Found .part file....passing")
-                still_downloading = True
-                break
-            else:
-                if '.mkv' in f or '.mp4' in f or '.avi' in f:
-                    num_files+=1
-                    print(f"   {os.path.join(curdir, d, f)}")
-                    to_extract.append(f)
-                else:
-                    pass
-        print(f"numfiles: {num_files}")                
-        if num_files > 1 or still_downloading == True:
-            print("   This is either a series or still downloading")
-        else:
-            print("...Extracting files")
-            for i in to_extract:
-                shutil.move(os.path.join(curdir, d, i), os.path.join(curdir, i))
+for d in dir_scan(root_dir):
+    print(f"Directory: {d.name}")
+    for f in dir_scan(d.path, True):        
+        if any(x in f.name for x in file_excludes):
+            pass
+        elif any(x in f.name for x in video_file_extensions):
+            print(f"   Extracting....{f.path} to {os.path.join(root_dir, f.name)}")
+            shutil.move(f.path, os.path.join(root_dir, f.name))
 
-
-def find_series_dir(dir):
-    pass
-
-def parse_dirs(curdir):
-    print(f"Parsing directory: {curdir}")
-    dirs = []
-    for (dirpath, dirnames, filenames) in os.walk(curdir):
-        dirs.extend(dirnames)
-    return dirs
-
-def parse_files(dir):
-    print(f"Parsing directory: {dir}")
-    files = []
-    for (dirpath, dirnames, filenames) in os.walk(dir):
-        files.extend(filenames)
-    return files
-        

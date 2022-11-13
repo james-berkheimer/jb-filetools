@@ -2,7 +2,8 @@ import os, shutil
 
 # Establish globals
 curdir = os.getcwd()
-file_extensions = [".mkv", ".mp4", ".part", ".avi"]
+root_scan_obj = os.scandir(curdir)
+exclude_extensions = [".mkv", ".mp4", ".part", ".avi"]
 
 # parse directories and identify those that are empty
 dirs = []
@@ -17,7 +18,7 @@ for d in dirs:
     for (dirpath, dirnames, filenames) in os.walk(d):
         for f in filenames:
             print("  ",f)
-            if [ele for ele in file_extensions if(ele in f)]:
+            if [ele for ele in exclude_extensions if(ele in f)]:
                 if "sample-" in f:
                     print("   Found file but it's a sample....deleting:", f)
                     delete = True
@@ -28,6 +29,15 @@ for d in dirs:
     if delete:
         dirsToDelete.append(os.path.join(curdir, d))
     print("\n")
+
+# for entry1 in root_scan_obj:
+#     if entry1.is_dir(): 
+#         dir_scan_obj = os.scandir(entry1.path)
+#         print(f"Directory: {entry1.name}")
+#         for entry2 in dir_scan_obj:
+#             delete = True            
+#             if entry2.is_file():
+#                 elif any(x in entry2.name for x in video_file_extensions):
     
 # Prompt user.  Initiate delete if yes
 print("Empty directories:")

@@ -15,6 +15,7 @@ import os, shutil, traceback
 # --------------------------------------------------------------------------------
 video_file_extensions = [".mkv", ".mp4", ".avi"]
 file_extentions_to_clean = [".mkv", ".mp4", ".part", ".avi"]
+file_excludes = [".part"]
 
 # --------------------------------------------------------------------------------
 # Public API
@@ -81,36 +82,34 @@ def clean_empty_dirs(curdir):
             except OSError as e:
                 print("Error: %s : %s" % (d, e.strerror))
 
-def extract_files(curdir:str):
-    for d in __parse_dirs(curdir):
-        num_files = 0
-        to_extract = []
-        still_downloading = False
-        for f in __parse_files(d):
-            if '.part' in f:
-                print("Found .part file....passing")
-                still_downloading = True
-                break
-            else:
-                if any(x in f for x in video_file_extensions):
-                    num_files+=1
-                    print(f"   {os.path.join(curdir, d, f)}")
-                    to_extract.append(f)
-                else:
-                    pass
-        print(f"numfiles: {num_files}")                
-        if num_files > 1 or still_downloading == True:
-            print("   This is either a series or still downloading")
-        else:
-            print("...Extracting files")
-            for i in to_extract:
-                shutil.move(os.path.join(curdir, d, i), os.path.join(curdir, i))
+def extract_files(root_dir:str):
+    for d in __dir_scan(root_dir):
+        print(f"Directory: {d.name}")
+        for f in __dir_scan(d.path, True):        
+            if any(x in f.name for x in file_excludes):
+                pass
+            elif any(x in f.name for x in video_file_extensions):
+                print(f"   Extracting....{f.path} to {os.path.join(root_dir, f.name)}")
+                shutil.move(f.path, os.path.join(root_dir, f.name))
 
 
 
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
+
+def __dir_scan(scan_path:str, getfiles=False):
+    scan_obj = os.scandir(scan_path)
+    scan_output = []
+    for root_scan_entry in scan_obj:
+        if getfiles == False:
+            if root_scan_entry.is_dir():
+                scan_output.append(root_scan_entry)
+        else:
+            if root_scan_entry.is_file():
+                scan_output.append(root_scan_entry)
+    scan_obj.close()
+    return scan_output
 
 def __make_temp_dir(tmpdir):
     if os.path.exists(tmpdir):
