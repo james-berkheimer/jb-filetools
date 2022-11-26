@@ -10,11 +10,10 @@
 # Imports
 # --------------------------------------------------------------------------------
 import argparse
-import os, sys, pathlib
+import os, sys
 import modules.const as const
 import modules.moving_files as moving_files
 import modules.naming_files as naming_files
-import modules._testing.test as test
 
 # --------------------------------------------------------------------------------
 # Main
@@ -33,31 +32,23 @@ def main():
         "-e",
         "--extractfiles",
         nargs='?',
-        const=curdir,
+        default=curdir,
         help="Extract specified video files from subdirectories in the current directory")
 
     parser.add_argument(
-        "-re",
-        "--rename-episodes",
+        "-r",
+        "--rename",
         type=str,
         nargs='?',
-        const=curdir,
-        help="Rename eposidic video files")
-
-    parser.add_argument(
-        "-rm",
-        "--rename-movies",
-        type=str,
-        nargs='?',
-        const=curdir,
-        help="Rename movie video files")
+        default=curdir,
+        help="Rename files to standardized formats")
 
     parser.add_argument(
         "-atd",
         "--add-to-dir",
         type=str,
         nargs='?',
-        const=curdir,
+        default=curdir,
         help="Moves renamed movie files into a directory of the same name")
 
     parser.add_argument(
@@ -65,7 +56,7 @@ def main():
         "--delete-empty-dirs",
         type=str,
         nargs='?',
-        const=curdir,
+        default=curdir,
         help="Deletes all subdirectories that don't hold a specified video file")
 
     args = parser.parse_args()
@@ -83,20 +74,13 @@ def main():
         else:
             print(f"{args.extractfiles} is not a valid directory path")
 
-    if "rename_episodes" in args:
+    if "rename" in args:
         if os.path.isdir(args.extractfiles):
             # test.hello2(args.extractfiles)
-            naming_files.rename_episodes(args.rename_episodes)
+            naming_files.rename_files(args.rename)
         else:
-            print(f"{args.extractfiles} is not a valid directory path")
-
-    if "rename_movies" in args:
-        if os.path.isdir(args.extractfiles):
-            # test.hello2(args.extractfiles)
-            naming_files.rename_movies(args.rename_movies)
-        else:
-            print(f"{args.extractfiles} is not a valid directory path")
-   
+            print(f"{args.rename} is not a valid directory path")
+            
     return const.EXIT_OK
 
 # def checkpath(path):
