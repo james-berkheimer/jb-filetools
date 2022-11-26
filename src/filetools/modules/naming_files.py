@@ -7,131 +7,125 @@
 # Imports
 # --------------------------------------------------------------------------------
 
-from genericpath import isdir
-import os, shutil, traceback, re, pathlib
+import os, traceback, re
+import modules.utils as utils
+import modules.const as const
+
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-files_to_delete = ['.DS_Store', 'RARBG.txt']
-video_file_extensions = [".mkv", ".mp4", ".avi"]
-
 
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
 
-def rename_episodes(curdir):
-    for f in os.listdir(curdir):
-        try:
-            if f in files_to_delete:
-                print("Deleting: %s" % (os.path.join(curdir, f)))
-                os.remove(os.path.join(curdir, f))
-            if '.part' in f:
-                print("This torrent is still downloading.....passing.")
+def rename_files(target_dir):
+    print("\n")
+    for file_obj in utils.dir_scan(target_dir, True):
+        print(f"Let's work on: {file_obj.name}")
+        if any(x in file_obj.name for x in const.files_to_delete):
+            print(f"   Cleanup, deleting: {file_obj.name}")
+            os.remove(file_obj.path)
+        file_ext = os.path.splitext(file_obj.name)[1]
+        if any(x in file_ext for x in const.video_file_extensions):
+            if os.path.isdir(file_obj.path):
+                print("  This is a directory....passing")
                 pass
-            if f in video_file_extensions:
-                if os.path.isdir(f):
-                    print("This is a directory....passing")
-                    pass
-                else:
-                    print(f"Renaming...{f}")
-                    season_episode, alt_naming = __getSeasonEpisode(f)
-                    fsplit = f.split(season_episode)
-                    if alt_naming:
-                        new_name = __rename(__fix_season_episode(season_episode), fsplit)
-                    else:                    
-                        new_name = __rename(season_episode, fsplit)
-                    os.rename(os.path.join(curdir, f), os.path.join(curdir, new_name))
-        except Exception as e:
-            print(str(e))
-            pass
-
-
-def rename_movies(curdir):
-    for f in os.listdir(curdir):
-        if '.DS_Store' in f:
-            pass
-        if os.path.isdir(f):
-            print("This is a directory....passing\n")
-            pass
+            else:
+                print("  Valid file, let's rename it")
+                try:
+                    __rename(file_obj)
+                except:
+                    print(traceback.format_exc())
         else:
-            print("Let's rename.....", f)
-            file_extension = pathlib.Path(f).suffix
-            print("   ", file_extension)
-            woExt = f.split(file_extension)[0]
-            print("   ", woExt)
-            cleanName = " ".join(woExt.split('.')).title()
-            print("   ", cleanName)
-            year = __getYear(cleanName)
-            print("   ", year)
-            newName = cleanName.split(year)[0] + "(" + year + ")" + file_extension
-            print("   ", newName)
-            try:
-                os.rename(os.path.join(curdir, f), os.path.join(curdir, newName))
-            except:
-                print(traceback.format_exc())
-            print("\n")
-
+            print(f"  This is not valid for renaming")
+        print("\n")
 
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
 
-def __fix_season_episode(match):
-    print("In fix_season_episode")
-    sortmatch = match.lower().split("of")
-    season = f'S{int(sortmatch[0]):02}'
-    episode = f'E{int(sortmatch[1]):02}'
+def __fix_season_episode(season_episode):
+    print(f"      Let's make a proper season_episode: {season_episode}")
+    sortmatch = season_episode.lower().split("of")
+    season = f"s{int(sortmatch[0]):02}"
+    episode = f"e{int(sortmatch[1]):02}"
     if season and episode:
         return f'{season}{episode}'
 
 def __getSeasonEpisode(filename):
-    ## Regular Expression guide
-        # r'''(?ix)                 # Ignore case (i), and use verbose regex (x)
-        # (?:                       # non-grouping pattern
-        #   s|season|^           # e or x or episode or start of a line
-        #   )                       # end non-grouping pattern 
-        # \s*                       # 0-or-more whitespaces
-        # (\d{2})                   # exactly 2 digits
-        
+    print("      Let's extract the season and episode numbers")
     alt_naming = False
     # Search for episodes with season/episode names of #of#
-    initial_match = re.search(r'''(?ix)\s*(\d{1})(?:of|^)\s*(\d{2})''', filename)
-    if initial_match:
+    alt_season_match = re.search(r'''(?ix)\s*(\d{1,2})(?:of|^)\s*(\d{2})''', filename)
+    if alt_season_match:
         print(f"Found alt season naming in {filename}")
         alt_naming = True
-        return initial_match.group(0), alt_naming
+        return alt_season_match.group(0), alt_naming
     # Search for traditional S##E## naming
-    match_season = re.search(r'''(?ix)(?:s|season|^)\s*(\d{2})''', filename)
-    match_episode = re.search(r'''(?ix)(?:e|x|episode|^)\s*(\d{2})''', filename)
-
-    if match_season and match_episode:
-        return f"{match_season.group(0)}{match_episode.group(0)}", alt_naming
-
+    else:
+        match = re.search(r".?((s\d{2}|s\d{4})e\d{2}).?", filename, re.I)
+        if match:
+            parseMatch = match.group(1).lower().split('e')
+            match_season = parseMatch[0]
+            match_episode = f"e{parseMatch[1]}"
+            return f"{match_season}{match_episode}", alt_naming
+        else:
+            return None, alt_naming
 
 def __getYear(target_string):
-    matches = re.findall(r"[0-9]{4}", target_string)
+    print("      Let's extract the year of the movie")
+    try:
+        matches = re.findall(r"[0-9]{4}", target_string)
+    except:
+        print(f"NO YEAR MATCHES")
+        return False        
     filteredMatches = []
     for m in matches:
         if int(m) in range(1900,2030):
             filteredMatches.append(m)
     return(filteredMatches[-1])  
 
-
-def __rename(match, fsplit):
-    print(f"Season_Episode: {str(match)}")
-    print(fsplit)    
+def __rename(file_obj):
+    new_name:str()
     fk, hdr = "", ""
-    if "2160p" in fsplit:
-        fk = "-4K"
-    if "HDR" in fsplit:
-        hdr = "-HDR"
-    fsplit0 = fsplit[0].split('.')
-    fsplit1 = fsplit[1].split('.')
-    print(f"-----{fsplit0}------")
-    if 'BBC' in fsplit0:
-        fsplit0.remove('BBC')
-    episode_name = " ".join(fsplit0)
-    file_extension = fsplit1[-1]
-    return f"{episode_name} - {match.upper()}{fk}{hdr}.{file_extension}"
+    file_path = os.path.split(file_obj.path)[0]
+    filename_woExt, file_ext = os.path.splitext(file_obj.name)
+    season_episode, alt_naming = __getSeasonEpisode(file_obj.name)
+    if season_episode:
+        print(f"    TV file found")
+        fsplit = file_obj.name.lower().split(season_episode)
+        if alt_naming:
+            season_episode = __fix_season_episode(season_episode)        
+        if "2160p" in fsplit[1]:
+            print("      4K file found")
+            fk = "-4K"
+        if "hdr" in fsplit[1]:
+            print("      HDR file found")
+            hdr = "-hdr"
+        fsplit0 = fsplit[0].split('.')
+        print(f"fsplit0: {fsplit0}")
+        if 'bbc' in fsplit0:
+            print("      BBC file found")
+            fsplit0.remove('bbc')
+        episode_name = "_".join(fsplit0).rstrip()
+        new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
+        print(f"      new_name: {new_name}")
+        print(f"      RENAMING: {file_obj.path}, {os.path.join(file_path, new_name.lower())}")
+        os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
+    else:
+        print(f"    Movie file found")
+        filename_woExt_split = filename_woExt.split('.')
+        clean_name = "_".join(filename_woExt_split).lower()
+        if "2160p" in clean_name:
+            print("      4K file found")
+            fk = "-4K"
+        if "hdr" in clean_name or "hdr10plus" in clean_name:
+            print("      HDR file found")
+            hdr = "-hdr"
+        year = __getYear(clean_name)
+        new_name = f"{clean_name.split(year)[0].rstrip()}({year}){fk}{hdr}{file_ext}".lower()
+        print(f"      new_name: {new_name}")
+        print(f"      RENAMING: {file_obj.path}, {os.path.join(file_path, new_name)}")
+        os.rename(file_obj.path, os.path.join(file_path, new_name))

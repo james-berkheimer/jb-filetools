@@ -8,33 +8,32 @@
 # --------------------------------------------------------------------------------
 
 import os, shutil, traceback
+import modules.const as const
+import modules.utils as utils
 
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-video_file_extensions = [".mkv", ".mp4", ".avi"]
-file_extentions_to_clean = [".mkv", ".mp4", ".part", ".avi"]
-file_excludes = [".part"]
 
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
 
-def add_to_dir(curdir:str):
+def add_to_dir(target_dir:str):
     files = []
-    tmpdir = __make_temp_dir(os.path.join(curdir, "_tmp"))
-    for entry in os.scandir(curdir):
+    tmpdir = __make_temp_dir(os.path.join(target_dir, "_tmp"))
+    for entry in os.scandir(target_dir):
         if entry.is_dir():
             continue
         else:
             files.append(entry.name) 
             
     for f in files:
-        if any(x in f for x in video_file_extensions):
+        if any(x in f for x in const.video_file_extensions):
             newDir = f[:-11]
-            newpath = curdir + newDir
-            src = dst = os.path.join(curdir, f) 
+            newpath = target_dir + newDir
+            src = dst = os.path.join(target_dir, f) 
             dst = os.path.join(newpath, f)
             print("Moving: %s to %s" % (src, dst))      
             toTmp = os.path.join(tmpdir, newDir)
@@ -48,68 +47,55 @@ def add_to_dir(curdir:str):
 
         print("\n")
 
-def clean_empty_dirs(curdir):
-    dirsToDelete = []
-    for d in __parse_dirs(curdir):
+def clean_empty_dirs(target_dir:str):
+    dirs_to_delete = []
+    # for d in __parse_dirs(target_dir):
+    for dir_obj in utils.dir_scan(target_dir):
         delete = True
-        print("Directory:",d)
-        for f in __parse_files(d):
-            print("  ",f)
-            if any(x in f for x in file_extentions_to_clean):
-                if "sample-" in f:
-                    print("   Found file but it's a sample....deleting:", f)
+        print("Directory:",dir_obj.name)
+        # for f in __parse_files(d):
+        for file_obj in utils.dir_scan(dir_obj.path):
+            print("  ",file_obj.name)
+            if any(x in file_obj.name for x in const.video_file_extensions):
+                if "sample-" in file_obj.name:
+                    print("   Found file but it's a sample....deleting:", file_obj.name)
                     delete = True
                     break
-                print("   Found file....", f)
+                print("   Found file....", file_obj.name)
                 delete = False
                 pass
         if delete:
-            dirsToDelete.append(os.path.join(curdir, d))
+            dirs_to_delete.append(os.path.join(target_dir, dir_obj.name))
         print("\n")
 
     # Prompt user.  Initiate delete if yes
     print("Empty directories:")
-    for d in dirsToDelete:    
-        print("",d)
+    for dir_to_delete in dirs_to_delete:    
+        print(f"   {dir_to_delete}")
     print("\n")
-
-    userInput = input("Delete directories? y/n?\n")
-    if userInput == "y":
-        for d in dirsToDelete:
+    user_input = input("Delete directories? y/n?\n")
+    if user_input == "y":
+        for d in dirs_to_delete:
             print("Deleting directory.....", d)
             try:
                 shutil.rmtree(d)
             except OSError as e:
                 print("Error: %s : %s" % (d, e.strerror))
 
-def extract_files(root_dir:str):
-    for d in __dir_scan(root_dir):
-        print(f"Directory: {d.name}")
-        for f in __dir_scan(d.path, True):        
-            if any(x in f.name for x in file_excludes):
+def extract_files(target_dir:str):
+    for dir_obj in utils.dir_scan(target_dir):
+        print(f"Directory: {dir_obj.name}")
+        for file_obj in utils.dir_scan(dir_obj.path, True):        
+            if any(x in file_obj.name for x in const.file_excludes):
                 pass
-            elif any(x in f.name for x in video_file_extensions):
-                print(f"   Extracting....{f.path} to {os.path.join(root_dir, f.name)}")
-                shutil.move(f.path, os.path.join(root_dir, f.name))
-
-
+            elif any(x in file_obj.name for x in const.video_file_extensions):
+                new_name = os.path.join(target_dir, file_obj.name)
+                print(f"   Extracting....{file_obj.path} to {new_name}")
+                shutil.move(file_obj.path, new_name)
 
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
-
-def __dir_scan(scan_path:str, getfiles=False):
-    scan_obj = os.scandir(scan_path)
-    scan_output = []
-    for root_scan_entry in scan_obj:
-        if getfiles == False:
-            if root_scan_entry.is_dir():
-                scan_output.append(root_scan_entry)
-        else:
-            if root_scan_entry.is_file():
-                scan_output.append(root_scan_entry)
-    scan_obj.close()
-    return scan_output
 
 def __make_temp_dir(tmpdir):
     if os.path.exists(tmpdir):
@@ -117,18 +103,3 @@ def __make_temp_dir(tmpdir):
     else:
         os.mkdir(tmpdir)
     return(tmpdir)
-
-def __parse_dirs(curdir):
-    print(f"Parsing directory: {curdir}")
-    dirs = []
-    for (dirpath, dirnames, filenames) in os.walk(curdir):
-        dirs.extend(dirnames)
-    return dirs
-
-def __parse_files(dir):
-    print(f"Parsing directory: {dir}")
-    files = []
-    for (dirpath, dirnames, filenames) in os.walk(dir):
-        files.extend(filenames)
-    return files
-        
