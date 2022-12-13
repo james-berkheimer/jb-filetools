@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 setup(
     name="filetools",
-    version="0.0.1",
+    version="1.0.0",
     packages=find_packages(where="src/filetools"),
     package_dir={"": "src/filetools"},
     install_requires=[],

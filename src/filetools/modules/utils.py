@@ -42,7 +42,11 @@ def fix_season_episode(season_episode):
         return f'{season}{episode}'
 
 def get_config():
-    config_file = get_project_root().joinpath("config.ini")
+    try:
+        config_file = get_project_root().joinpath("config.ini")
+    except:
+        print("No congif.ini found, let's make one...")
+        
     config = configparser.ConfigParser()
     config.read(config_file)
     return config
@@ -82,6 +86,13 @@ def get_year(target_string):
         if int(m) in range(1900,2030):
             filteredMatches.append(m)
     return(filteredMatches[-1])  
+
+def make_config():
+    '''TODO
+    For eventual public release.  Make a function that 
+    allows the user to generate a config. 
+    '''
+    pass
 
 def match_for_tv(filename):    
     return re.search(r".?((s\d{2}|s\d{4})e\d{2}).?", filename, re.I)

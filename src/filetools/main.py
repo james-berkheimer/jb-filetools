@@ -34,9 +34,21 @@ def main():
     # Get tool arguments
     parsed_args = args.parsed_args
     print(f"Path to work on: {parsed_args.Path}")
-    if parsed_args.cmd:
-        for action in parsed_args.cmd:
-            print(f"{action} in {parsed_args.Path}")        
+    if parsed_args.cmd1:
+        for action in parsed_args.cmd1:
+            print(f"{action}")      
+
+    if parsed_args.cmd2:          
+        for action in parsed_args.cmd2:
+            print(f"{action}")   
+
+    if parsed_args.cmd3:
+        for action in parsed_args.cmd3:
+            print(f"{action}")        
+
+    if parsed_args.cmd4:
+        for action in parsed_args.cmd4:
+            print(f"{action}")        
 
 
 if __name__ == '__main__':
