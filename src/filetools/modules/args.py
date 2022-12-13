@@ -19,7 +19,7 @@ CONFIG = utils.get_config()
 CURDIR = Path(CONFIG['paths']['TRANSMISSION'])
 
 # Establish args PARSER
-PARSER = argparse.ArgumentPARSER(prog="filetools", 
+PARSER = argparse.ArgumentParser(prog="filetools", 
                                     description="Let's parse some files",
                                     allow_abbrev=False)
 
@@ -38,7 +38,7 @@ PARSER.add_argument(
 PARSER.add_argument(
     "-e",
     "--extract_files",
-    dest='cmd',
+    dest='cmd1',
     const='extract_files',
     action='append_const',
     help="Extract specified video files from subdirectories in the current directory")
@@ -46,34 +46,27 @@ PARSER.add_argument(
 PARSER.add_argument(
     "-r",
     "--raname_files",
-    dest='cmd',
+    dest='cmd2',
     const='rename_files',
     action='append_const',
     help="Rename files to standardized formats")
 
 PARSER.add_argument(
-    "-atd",
-    "--add_to_dir",
-    dest='cmd',
-    const='add_to_dir',
+    "-m",
+    "--move-files",        
+    dest='cmd3',
+    const='move_files',
     action='append_const',
-    help="Moves renamed movie files into a directory of the same name")
+    help="Moves renamed files to the filesystem")
 
 PARSER.add_argument(
     "-ded",
     "--delete_empty_dirs",        
-    dest='cmd',
+    dest='cmd4',
     const='delete_empty_dirs',
     action='append_const',
     help="Deletes all subdirectories that don't hold a specified video file")
 
-PARSER.add_argument(
-    "-mf",
-    "--move-files",        
-    dest='cmd',
-    const='move_files',
-    action='append_const',
-    help="Moves renamed files to the filesystem")
 
 # --------------------------------------------------------------------------------
 # Parse Args
