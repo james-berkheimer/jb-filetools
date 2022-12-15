@@ -20,7 +20,7 @@ CONFIG = utils.get_config()
 VIDEO_FILE_EXTENSIONS = CONFIG['files']['VIDEO_FILE_EXTENSIONS']
 FILE_EXCLUDES = CONFIG['files']['FILE_EXCLUDES']
 MOVIES_PATH = Path(CONFIG['paths']['MOVIES'])
-TRANSMISSION = Path(CONFIG['paths']['TRANSMISSION'])
+FILE_ROOT = Path(CONFIG['paths']['FILE_ROOT'])
 TELEVISION = Path(CONFIG['paths']['TELEVISION'])
 DOCUMENTARIES = Path(CONFIG['paths']['DOCUMENTARIES'])
 
@@ -99,7 +99,7 @@ def extract_files(target_dir:Path):
                 shutil.move(file_obj.path, new_name)
 
 def move_files():
-    shows, movies = __sort_media(utils.dir_scan(TRANSMISSION, True))
+    shows, movies = __sort_media(utils.dir_scan(FILE_ROOT, True))
     __move_movies(movies)
     __move_shows(shows)
 
@@ -123,7 +123,7 @@ def __move_movies(movies: list):
         if not new_movie_path.is_dir():
             print(f"Making: {new_movie_path}")            
             os.mkdir(new_movie_path)
-            src = TRANSMISSION.joinpath(movie)
+            src = FILE_ROOT.joinpath(movie)
             dst = new_movie_path.joinpath(movie)
             print(f"Movie: {src} to {dst}")
             shutil.move(src, dst)
@@ -133,7 +133,7 @@ def __move_shows(shows: list):
         season_episode = utils.get_season_episode(show)
         show_name = show.split(season_episode[0])[0].rstrip('_')
         season = utils.split_season_episode(season_episode)[0]
-        src = TRANSMISSION.joinpath(show)
+        src = FILE_ROOT.joinpath(show)
         try:
             matched_path = Path(CONFIG['Shows'][show_name])
             season_path = matched_path.joinpath(season)

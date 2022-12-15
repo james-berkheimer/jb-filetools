@@ -58,7 +58,6 @@ def ask_multichoice(qlist: list):
         answer = None
         user_input = input(qstring)
         if user_input in qdict.keys():
-            print(f"Selected...{qdict[user_input]}")
             answer = qdict[user_input]
             return answer
         else:
