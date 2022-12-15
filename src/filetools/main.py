@@ -21,7 +21,7 @@ import modules.utils as utils
 # --------------------------------------------------------------------------------
 utils.make_shows_map() #Make and/or update the shows_map.ini
 CONFIG = utils.get_config()
-TRANSMISSION = Path(CONFIG['paths']['TRANSMISSION'])
+FILE_ROOT = Path(CONFIG['paths']['FILE_ROOT'])
 
 # --------------------------------------------------------------------------------
 # Main

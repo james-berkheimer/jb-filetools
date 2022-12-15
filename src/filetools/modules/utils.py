@@ -92,6 +92,12 @@ def make_config():
     For eventual public release.  Make a function that 
     allows the user to generate a config. 
     '''
+    sections = ['files', 'paths']
+    files = ["FILES_TO_DELETE", "VIDEO_FILE_EXTENSIONS", "FILE_EXCLUDES"]
+    paths = ["FILE_ROOT", "MEDIA", "TELEVISION", "DOCUMENTARIES", "MOVIES"]
+
+    
+    
     pass
 
 def match_for_tv(filename):    

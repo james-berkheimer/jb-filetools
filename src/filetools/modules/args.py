@@ -16,7 +16,7 @@ import modules.utils as utils
 # Globals
 # --------------------------------------------------------------------------------
 CONFIG = utils.get_config()
-CURDIR = Path(CONFIG['paths']['TRANSMISSION'])
+CURDIR = Path(CONFIG['paths']['FILE_ROOT'])
 
 # Establish args PARSER
 PARSER = argparse.ArgumentParser(prog="filetools", 
@@ -45,7 +45,7 @@ PARSER.add_argument(
 
 PARSER.add_argument(
     "-r",
-    "--raname_files",
+    "--rename_files",
     dest='cmd2',
     const='rename_files',
     action='append_const',
