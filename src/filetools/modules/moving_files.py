@@ -149,7 +149,7 @@ def __move_shows(shows: list, root_dir:Path):
             if season_path.exists() is False:
                 print(f"Season {season} does not exist")
                 if questions.ask_bool("Do you want to add a new season and move file to it?"):
-                    print("Making season directory")
+                    print(f"Making season directory: {season_path}")
                     os.makedir(season_path)   
                     print(f"Moving: {src} -> {dest}")
                     shutil.move(src, dest)
