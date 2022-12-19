@@ -125,11 +125,11 @@ def __move_movies(movies: list, root_dir:Path):
         new_movie_path = const.MOVIES_PATH.joinpath(movie_name)
         if not new_movie_path.is_dir():
             print(f"Making: {new_movie_path}")            
-            # os.mkdir(new_movie_path)
+            os.mkdir(new_movie_path)
             src = root_dir.joinpath(movie)
             dst = new_movie_path.joinpath(movie)
             print(f"Movie: {src} to {dst}")
-            # shutil.move(src, dst)
+            shutil.move(src, dst)
         else:
             print(f"Movie already in server: {movie}")
 
