@@ -102,7 +102,7 @@ def make_config():
             #SAVE CONFIG FILE
             with open(const.PROJECT_ROOT.joinpath("config.ini"),"w") as file_object:
                 config_file.write(file_object)
-            print("Config file 'person.ini' created")
+            print("Config file 'config.ini' created")
             exit()
         else:
             path = questions.ask_text_input(f"Enter {choice} path:")
