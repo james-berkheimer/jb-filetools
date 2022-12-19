@@ -162,5 +162,5 @@ cython_debug/
 
 # Custom excludes
 /bin/legacy
-config.ini
-shows_map.ini
+/src/filetools/config.ini
+/src/filetools/shows_map.ini
