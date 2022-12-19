@@ -50,8 +50,8 @@ def main():
             print(f"{action}") 
             
     if parsed_args.makeconfig:
-        utils.make_config() 
-
+        print("calling make config")
+        utils.make_config()
 # Main
 if __name__ == '__main__':
     return_code = main()
