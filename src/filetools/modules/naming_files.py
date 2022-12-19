@@ -8,29 +8,25 @@
 # --------------------------------------------------------------------------------
 import os, traceback
 import modules.utils as utils
-
+import modules.const as const
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-CONFIG = utils.get_config()
-VIDEO_FILE_EXTENSIONS = CONFIG['files']['VIDEO_FILE_EXTENSIONS']
-FILE_EXCLUDES = CONFIG['files']['FILE_EXCLUDES']
-FILES_TO_DELETE = CONFIG['files']['FILES_TO_DELETE']
+
 
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
 
 def rename_files(target_dir):
-    print("\n")
     for file_obj in utils.dir_scan(target_dir, True):
         print(f"Let's work on: {file_obj.name}")
-        if any(x in file_obj.name for x in FILES_TO_DELETE):
-            print(f"Cleanup, deleting: {file_obj.name}")
+        if any(x in file_obj.name for x in const.FILES_TO_DELETE):
+            print(f"deleting: {file_obj.name}")
             os.remove(file_obj.path)
         file_ext = os.path.splitext(file_obj.name)[1]
-        if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
+        if any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
             if os.path.isdir(file_obj.path):
                 print("This is a directory....passing")
                 pass
