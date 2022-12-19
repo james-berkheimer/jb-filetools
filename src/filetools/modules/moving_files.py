@@ -175,7 +175,7 @@ def __move_shows(shows: list, root_dir:Path):
                     # shutil.move(src, new_show_path.joinpath(show))                  
                 else:
                     show_type_path = const.DOCUMENTARIES_PATH
-                    show_network = questions.ask_bool("Please enter the network the show is on")
+                    show_network = questions.ask_text_input("Please enter the network the show is on")
                     new_show_path = show_type_path.joinpath(show_network, show_name, season)
                     print(f"Making {new_show_path}")
                     # os.makedirs(new_show_path)

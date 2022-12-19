@@ -93,6 +93,7 @@ def make_config():
     allows the user to generate a config. 
     '''
     config_file = configparser.ConfigParser()
+    config_file.optionxform = str
     config_file.add_section('paths')
     paths = ["FILE_ROOT","TELEVISION", "DOCUMENTARIES", "MOVIES", "exit"]
     while len(paths) > 0:
