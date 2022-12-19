@@ -75,7 +75,6 @@ def get_show_map():
     return config
 
 def get_year(target_string):
-    print("Let's extract the year of the movie")
     try:
         matches = re.findall(r"[0-9]{4}", target_string)
     except:

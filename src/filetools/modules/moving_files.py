@@ -150,9 +150,9 @@ def __move_shows(shows: list, root_dir:Path):
                 print(f"Season {season} does not exist")
                 if questions.ask_bool("Do you want to add a new season and move file to it?"):
                     print("Making season directory")
-                    # os.makedir(season_path)   
+                    os.makedir(season_path)   
                     print(f"Moving: {src} -> {dest}")
-                    # shutil.move(src, dest)
+                    shutil.move(src, dest)
                 else:
                     print("Passing")
             elif dest.exists():
@@ -160,7 +160,7 @@ def __move_shows(shows: list, root_dir:Path):
                 print("Passing")
             else:
                 print(f"Moving: {src} -> {dest}")
-                # shutil.move(src, dest)
+                shutil.move(src, dest)
                 print("\n")
         except:
             print(f"{show_name} does not exist")
@@ -170,17 +170,17 @@ def __move_shows(shows: list, root_dir:Path):
                     show_network = questions.ask_text_input("Please enter the network the show is on")
                     new_show_path = show_type_path.joinpath(show_network, show_name, season)
                     print(f"Making {new_show_path}")
-                    # os.makedirs(new_show_path)
+                    os.makedirs(new_show_path)
                     print(f"Moving {src} to {new_show_path.joinpath(show)}")                    
-                    # shutil.move(src, new_show_path.joinpath(show))                  
+                    shutil.move(src, new_show_path.joinpath(show))                  
                 else:
                     show_type_path = const.DOCUMENTARIES_PATH
                     show_network = questions.ask_text_input("Please enter the network the show is on")
                     new_show_path = show_type_path.joinpath(show_network, show_name, season)
                     print(f"Making {new_show_path}")
-                    # os.makedirs(new_show_path)
+                    os.makedirs(new_show_path)
                     print(f"Moving {src} to {new_show_path.joinpath(show)}")
-                    # shutil.move(src, new_show_path.joinpath(show))
+                    shutil.move(src, new_show_path.joinpath(show))
                     
 def __sort_media(files_obj):
     print("------------ Sort Media ------------")
