@@ -134,6 +134,10 @@ def __move_movies(movies: list, root_dir:Path):
             print(f"Movie already in server: {movie}")
 
 def __move_shows(shows: list, root_dir:Path):
+    '''TODO
+    You need to make a list of all the moves to run 
+    after you prepared the directory structure for all files
+    '''
     print("------------ Move Shows ------------")
     show_map = utils.get_show_map()
     for show in shows:
