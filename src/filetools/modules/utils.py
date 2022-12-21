@@ -36,7 +36,6 @@ def dir_scan(scan_path:str, getfiles=False):
     return scan_output
 
 def fix_season_episode(season_episode):
-    print(f"Fixing season_episode to standard: {season_episode}")
     sortmatch = season_episode.lower().split("of")
     season = f"s{int(sortmatch[0]):02}"
     episode = f"e{int(sortmatch[1]):02}"
@@ -44,12 +43,10 @@ def fix_season_episode(season_episode):
         return f'{season}{episode}'
 
 def get_season_episode(filename):
-    print("Extracting the season and episode numbers")
     alt_naming = False
     # Search for episodes with season/episode names of #of#
     alt_season_match = match_for_altseason(filename)
     if alt_season_match:
-        print(f"Found alt season naming in {filename}")
         alt_naming = True
         return alt_season_match.group(0), alt_naming
     # Search for traditional S##E## naming
@@ -135,3 +132,7 @@ def split_season_episode(season_episode):
     season = split[0]
     episode = f"e{split[1]}"
     return season, episode
+
+def unique(lst):
+    from collections import Counter
+    return (list(Counter(lst).keys()))
