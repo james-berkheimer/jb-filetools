@@ -53,33 +53,33 @@ def clean_empty_dirs(root_dir:Path):
     for dir_obj in utils.dir_scan(root_dir):
         delete = True
         print("Directory:",dir_obj.name)
-        for file_obj in utils.dir_scan(dir_obj.path):
-            print("  ",file_obj.name)
+        for file_obj in utils.dir_scan(dir_obj.path, True):
+            print(file_obj.name)
             if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
-                if "sample-" in file_obj.name:
-                    print("Found file but it's a sample....deleting:", file_obj.name)
-                    delete = True
-                    break
-                print("   Found file....", file_obj.name)
-                delete = False
-                pass
+                if any(x in file_obj.name for x in const.FILE_EXCLUDES):
+                    if "sample-" in file_obj.name:
+                        delete = True
+                        break
+                    print("Found file....", file_obj.name)
+                    delete = False
+                    pass
         if delete:
             dirs_to_delete.append(root_dir.joinpath(dir_obj.name))
-        print("\n")
-
     # Prompt user.  Initiate delete if yes
-    print("Empty directories:")
-    for dir_to_delete in dirs_to_delete:    
-        print(f"   {dir_to_delete}")
-    print("\n")
-    user_input = input("Delete directories? y/n?\n")
-    if user_input == "y":
-        for d in dirs_to_delete:
-            print("Deleting directory.....", d)
-            try:
-                shutil.rmtree(d)
-            except OSError as e:
-                print("Error: %s : %s" % (d, e.strerror))
+    if dirs_to_delete:
+        print("Empty directories:")
+        for dir_to_delete in dirs_to_delete:    
+            print(f"{dir_to_delete}")
+        print("\n")
+        if questions.ask_bool("Delete directories?"):
+            for d in dirs_to_delete:
+                print("Deleting directory.....", d)
+                try:
+                    shutil.rmtree(d)
+                except OSError as e:
+                    print("Error: %s : %s" % (d, e.strerror))
+    else:
+        print("Nothing directories to delete")
 
 def extract_files(root_dir:Path):
     print(type(root_dir))
@@ -123,12 +123,13 @@ def __move_movies(movies: list, root_dir:Path):
         movie_year = utils.get_year(movie)
         movie_name = movie.split(f"({movie_year})")[0].rstrip('_')
         new_movie_path = const.MOVIES_PATH.joinpath(movie_name)
-        if not new_movie_path.is_dir():
+        src = root_dir.joinpath(movie)
+        dst = new_movie_path.joinpath(movie)
+        if new_movie_path.exists() is False:
             print(f"Making: {new_movie_path}")            
             os.mkdir(new_movie_path)
-            src = root_dir.joinpath(movie)
-            dst = new_movie_path.joinpath(movie)
-            print(f"Movie: {src} to {dst}")
+        if dst.is_file() is False:
+            print(f"Moving: {src} to {dst}")
             shutil.move(src, dst)
         else:
             print(f"Movie already in server: {movie}")
@@ -166,26 +167,24 @@ def __move_shows(shows: list, root_dir:Path):
                 new_show_path = show_type_path.joinpath(show_network, show_name, season)
                 make_dirs.append(new_show_path)
                 move_dict[src] = new_show_path.joinpath(show)
-
-    # Make dirs that don't exist 
-    make_dirs = utils.unique(make_dirs)
-    for mdir in make_dirs:
-        print(f"   {mdir}")
-    if questions.ask_bool("Do you want to make directories?"):
+    if make_dirs:
+        # Make dirs that don't exist 
+        make_dirs = utils.unique(make_dirs)
         for mdir in make_dirs:
-            print(f"Making....{mdir}")
-            os.makedirs(mdir)
-            
+            print(f"   {mdir}")
+        if questions.ask_bool("Do you want to make directories?"):
+            for mdir in make_dirs:
+                print(f"Making....{mdir}")
+                os.makedirs(mdir)            
     print("\n")
-    
-    # Let's move these files
-    # uniquify move_dict
-    for src, dest in move_dict.items():
-        print(dest)
-    if questions.ask_bool("Do you want to move files?"):
+    if move_dict:
+        # Let's move these files
         for src, dest in move_dict.items():
-            print(f"moving....{dest}")
-            shutil.move(src, dest)
+            print(dest)
+        if questions.ask_bool("Do you want to move files?"):
+            for src, dest in move_dict.items():
+                print(f"moving....{dest}")
+                shutil.move(src, dest)
                     
 def __sort_media(files_obj):
     print("------------ Sort Media ------------")

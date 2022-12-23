@@ -47,7 +47,8 @@ def main():
 
     if parsed_args.deleteemptydirs:
         for action in parsed_args.deleteemptydirs:
-            print(f"{action}") 
+            print(f"{action}")
+            moving_files.clean_empty_dirs(root_dir) 
             
     if parsed_args.makeconfig:
         print("calling make config")
