@@ -5,8 +5,3 @@ src/filetools/filetools.egg-info/SOURCES.txt
 src/filetools/filetools.egg-info/dependency_links.txt
 src/filetools/filetools.egg-info/entry_points.txt
 src/filetools/filetools.egg-info/top_level.txt
-src/filetools/filetools.egg-info/PKG-INFO
-src/filetools/filetools.egg-info/SOURCES.txt
-src/filetools/filetools.egg-info/dependency_links.txt
-src/filetools/filetools.egg-info/entry_points.txt
-src/filetools/filetools.egg-info/top_level.txt
