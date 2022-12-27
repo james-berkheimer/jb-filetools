@@ -35,13 +35,6 @@ def dir_scan(scan_path:str, getfiles=False):
     scan_obj.close()
     return scan_output
 
-def fix_season_episode(season_episode):
-    sortmatch = season_episode.lower().split("of")
-    season = f"s{int(sortmatch[0]):02}"
-    episode = f"e{int(sortmatch[1]):02}"
-    if season and episode:
-        return f'{season}{episode}'
-
 def get_season_episode(filename):
     alt_naming = False
     # Search for episodes with season/episode names of #of#
@@ -59,17 +52,6 @@ def get_season_episode(filename):
             return f"{match_season}{match_episode}", alt_naming
         else:
             return None, alt_naming
-
-def get_show_map():
-    try:
-        show_map = const.PROJECT_ROOT.joinpath("shows_map.ini")
-    except:
-        print("No show_map.ini found, let's make one...")
-        make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
-        
-    config = configparser.ConfigParser()
-    config.read(show_map)
-    return config
 
 def get_year(target_string):
     try:
@@ -107,7 +89,6 @@ def make_config():
             print(f"Adding to config.ini: [paths]:{choice} = {path}")
             paths.remove(choice)
 
-
 def match_for_tv(filename):    
     return re.search(r".?((s\d{2}|s\d{4})e\d{2}).?", filename, re.I)
 
@@ -126,12 +107,6 @@ def make_shows_map():
     shows_map_path = const.PROJECT_ROOT.joinpath("shows_map.ini")
     with open(shows_map_path, 'w') as configfile:
         config.write(configfile)
-
-def split_season_episode(season_episode):
-    split = (season_episode[0].split('e'))
-    season = split[0]
-    episode = f"e{split[1]}"
-    return season, episode
 
 def unique(lst):
     from collections import Counter

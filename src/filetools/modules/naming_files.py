@@ -43,6 +43,13 @@ def rename_files(target_dir):
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
+def __fix_season_episode(season_episode):
+    sortmatch = season_episode.lower().split("of")
+    season = f"s{int(sortmatch[0]):02}"
+    episode = f"e{int(sortmatch[1]):02}"
+    if season and episode:
+        return f'{season}{episode}'
+
 def __rename(file_obj):
     new_name:str()
     fk, hdr = "", ""
@@ -53,7 +60,7 @@ def __rename(file_obj):
         print(f"TV file found")
         fsplit = file_obj.name.lower().split(season_episode)
         if alt_naming:
-            season_episode = utils.fix_season_episode(season_episode)        
+            season_episode = __fix_season_episode(season_episode)        
         if "2160p" in fsplit[1]:
             print("4K file found")
             fk = "-4K"

@@ -107,6 +107,16 @@ def move_files(root_dir:Path):
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
+def __get_show_map():
+    try:
+        show_map = const.PROJECT_ROOT.joinpath("shows_map.ini")
+    except:
+        print("No show_map.ini found, let's make one...")
+        utils.make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
+    import configparser
+    config = configparser.ConfigParser()
+    config.read(show_map)
+    return config
 
 def __make_temp_dir(tmpdir:Path):
     if tmpdir.exists():
@@ -116,8 +126,6 @@ def __make_temp_dir(tmpdir:Path):
     return(tmpdir)
 
 def __move_movies(movies: list, root_dir:Path):
-    print("------------ Move Movies ------------")
-    # print(movies)
     for movie in movies:
         print(movie)
         movie_year = utils.get_year(movie)
@@ -139,34 +147,43 @@ def __move_shows(shows: list, root_dir:Path):
     You need to make a list of all the moves to run 
     after you prepared the directory structure for all files
     '''
-    print("------------ Move Shows ------------")
     move_dict = {}
     make_dirs = []
-    show_map = utils.get_show_map()
+    skip = []
     for show in shows:
-        # print(show)
         season_episode = utils.get_season_episode(show)
         show_name = show.split(season_episode[0])[0].rstrip('_')
-        season = utils.split_season_episode(season_episode)[0].replace("s", "season_")
+        season = __split_season_episode(season_episode)[0].replace("s", "season_")
         src = root_dir.joinpath(show)
         try:
+            # first match.  Check if show is in show_map
+            show_map = __get_show_map()
             matched_path = Path(show_map['Shows'][show_name])
-            season_path = matched_path.joinpath(season)                       
+            season_path = matched_path.joinpath(season)  
+            # Second match.  Check if season exists                     
             if season_path.exists() is False:
-                # print(f"Season {season} does not exist")
                 make_dirs.append(season_path)
             move_dict[src] = season_path.joinpath(show) 
         except:
-            print(f"{show_name} does not exist") 
-            if questions.ask_bool(f"Do you want to add {show_name}?"):
-                if questions.ask_multichoice(["Television", "Documentary"]) == "Television":
-                    show_type_path = const.TELEVISION_PATH              
+            # If show is not in show_map, we will make a new show directory
+            if show_name not in skip:
+                print(f"{show_name} does not exist") 
+                if questions.ask_bool(f"Do you want to add {show_name}?"):
+                    if questions.ask_multichoice(["Television", "Documentary"]) == "Television":
+                        show_type_path = const.TELEVISION_PATH              
+                    else:
+                        show_type_path = const.DOCUMENTARIES_PATH
+                    show_network = questions.ask_text_input("Please enter the network the show is on")
+                    new_show_path = show_type_path.joinpath(show_network, show_name, season)
+                    # Making a new show directory.  This is for when we have multiple episodes
+                    # for a new show to add.  This will prevent having to ask this question
+                    # for each episode.
+                    os.makedirs(new_show_path)
+                    # create new show_map to include newly created show
+                    utils.make_shows_map()
+                    move_dict[src] = new_show_path.joinpath(show)
                 else:
-                    show_type_path = const.DOCUMENTARIES_PATH
-                show_network = questions.ask_text_input("Please enter the network the show is on")
-                new_show_path = show_type_path.joinpath(show_network, show_name, season)
-                make_dirs.append(new_show_path)
-                move_dict[src] = new_show_path.joinpath(show)
+                    skip.append(show_name)
     if make_dirs:
         # Make dirs that don't exist 
         make_dirs = utils.unique(make_dirs)
@@ -187,7 +204,6 @@ def __move_shows(shows: list, root_dir:Path):
                 shutil.move(src, dest)
                     
 def __sort_media(files_obj):
-    print("------------ Sort Media ------------")
     movies = []
     shows = []
     for file_obj in files_obj:
@@ -201,4 +217,10 @@ def __sort_media(files_obj):
             else:
                 movies.append(file_obj.name)
     return movies, shows
-    
+
+def __split_season_episode(season_episode):
+    split = (season_episode[0].split('e'))
+    season = split[0]
+    episode = f"e{split[1]}"
+    return season, episode
+
