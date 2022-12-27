@@ -73,7 +73,7 @@ def make_config():
     config_file = configparser.ConfigParser()
     config_file.optionxform = str
     config_file.add_section('paths')
-    paths = ["FILE_ROOT","TELEVISION", "DOCUMENTARIES", "MOVIES", "exit"]
+    paths = ["file_root","television", "documentaries", "movies", "exit"]
     while len(paths) > 0:
         print("Select path to add: ")
         choice = questions.ask_multichoice(paths)
