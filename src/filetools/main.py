@@ -32,23 +32,27 @@ def main():
     print(f"Path to work on: {root_dir}")
     if parsed_args.extractfiles:
         for action in parsed_args.extractfiles:
-            print(f"{action}")   
+            print(f"----------- {action} -----------")   
             moving_files.extract_files(root_dir)   
+            print("\n")
 
     if parsed_args.renamefiles:          
         for action in parsed_args.renamefiles:
-            print(f"{action}")
+            print(f"----------- {action} -----------")
             naming_files.rename_files(root_dir)   
+            print("\n")
 
     if parsed_args.movefiles:
         for action in parsed_args.movefiles:
-            print(f"{action}")        
+            print(f"----------- {action} -----------")       
             moving_files.move_files(root_dir)
+            print("\n")
 
     if parsed_args.deleteemptydirs:
         for action in parsed_args.deleteemptydirs:
-            print(f"{action}")
+            print(f"----------- {action} -----------")
             moving_files.clean_empty_dirs(root_dir) 
+            print("\n")
             
     if parsed_args.makeconfig:
         print("calling make config")

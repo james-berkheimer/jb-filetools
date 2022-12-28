@@ -79,7 +79,6 @@ def clean_empty_dirs(root_dir:Path):
         print("No directories to delete")
 
 def extract_files(root_dir:Path):
-    print(type(root_dir))
     for dir_obj in utils.dir_scan(root_dir):
         for file_obj in utils.dir_scan(dir_obj.path, True):     
             if any(x in file_obj.name for x in const.FILE_EXCLUDES):
