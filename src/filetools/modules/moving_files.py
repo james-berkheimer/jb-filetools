@@ -52,15 +52,12 @@ def clean_empty_dirs(root_dir:Path):
     dirs_to_delete = []
     for dir_obj in utils.dir_scan(root_dir):
         delete = True
-        print("Directory:",dir_obj.name)
         for file_obj in utils.dir_scan(dir_obj.path, True):
-            print(file_obj.name)
             if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
                 if any(x in file_obj.name for x in const.FILE_EXCLUDES):
                     if "sample-" in file_obj.name:
                         delete = True
                         break
-                    print("Found file....", file_obj.name)
                     delete = False
                     pass
         if delete:
@@ -79,7 +76,7 @@ def clean_empty_dirs(root_dir:Path):
                 except OSError as e:
                     print("Error: %s : %s" % (d, e.strerror))
     else:
-        print("Nothing directories to delete")
+        print("No directories to delete")
 
 def extract_files(root_dir:Path):
     print(type(root_dir))
