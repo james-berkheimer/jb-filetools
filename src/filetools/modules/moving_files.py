@@ -84,11 +84,8 @@ def clean_empty_dirs(root_dir:Path):
 def extract_files(root_dir:Path):
     print(type(root_dir))
     for dir_obj in utils.dir_scan(root_dir):
-        print(f"DIRECTORY: {dir_obj.name}")
-        for file_obj in utils.dir_scan(dir_obj.path, True):
-            print(f"FILE: {file_obj.name}")        
+        for file_obj in utils.dir_scan(dir_obj.path, True):     
             if any(x in file_obj.name for x in const.FILE_EXCLUDES):
-                print(f"Exclude: {file_obj.name}")
                 pass
             elif any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
                 new_name = root_dir.joinpath(file_obj.name)
@@ -96,10 +93,7 @@ def extract_files(root_dir:Path):
                 shutil.move(file_obj.path, new_name)
 
 def move_files(root_dir:Path):
-    print("------------ Move Files ------------")
     movies, shows = __sort_media(utils.dir_scan(root_dir, True))
-    # print(shows)
-    # print(movies)
     __move_movies(movies, root_dir)
     __move_shows(shows, root_dir)
 
@@ -143,10 +137,6 @@ def __move_movies(movies: list, root_dir:Path):
             print(f"Movie already in server: {movie}")
 
 def __move_shows(shows: list, root_dir:Path):
-    '''TODO
-    You need to make a list of all the moves to run 
-    after you prepared the directory structure for all files
-    '''
     move_dict = {}
     make_dirs = []
     skip = []

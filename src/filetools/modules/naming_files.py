@@ -62,19 +62,14 @@ def __rename(file_obj):
         if alt_naming:
             season_episode = __fix_season_episode(season_episode)        
         if "2160p" in fsplit[1]:
-            print("4K file found")
             fk = "-4K"
         if "hdr" in fsplit[1]:
-            print("HDR file found")
             hdr = "-hdr"
         fsplit0 = fsplit[0].split('.')
-        print(f"fsplit0: {fsplit0}")
         if 'bbc' in fsplit0:
-            print("BBC file found")
             fsplit0.remove('bbc')
         episode_name = "_".join(fsplit0).rstrip().replace("!", "")
         new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
-        print(f"new_name: {new_name}")
         print(f"RENAMING: {file_obj.path}, {os.path.join(file_path, new_name.lower())}")
         os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
     else:
@@ -82,13 +77,10 @@ def __rename(file_obj):
         filename_woExt_split = filename_woExt.split('.')
         clean_name = "_".join(filename_woExt_split).lower()
         if "2160p" in clean_name:
-            print("4K file found")
             fk = "-4K"
         if "hdr" in clean_name or "hdr10plus" in clean_name:
-            print("HDR file found")
             hdr = "-hdr"
         year = utils.get_year(clean_name)
         new_name = f"{clean_name.split(year)[0].rstrip()}({year}){fk}{hdr}{file_ext}".lower()
-        print(f"new_name: {new_name}")
         print(f"RENAMING: {file_obj.path}, {os.path.join(file_path, new_name)}")
         os.rename(file_obj.path, os.path.join(file_path, new_name))
