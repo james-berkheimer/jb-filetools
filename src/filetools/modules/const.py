@@ -17,9 +17,9 @@ import modules.utils as utils
 # --------------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).parent.parent
 CURRENT_WORKING_DIR = Path.cwd()
-FILES_TO_DELETE = [".DS_Store","RARBG.txt",".srt",".nfo",".sfv","humbs.db",".txt"]
+FILES_TO_DELETE = [".DS_Store","RARBG.txt",".srt",".nfo",".sfv","humbs.db",".txt","Sample.mkv", "Trailer.mkv"]
 VIDEO_FILE_EXTENSIONS = [".mkv",".mp4",".mpeg",".mpg",".mov",".avi"]
-FILE_EXCLUDES = [".part"]
+FILE_EXCLUDES = [".part", "Sample.mkv", "Trailer.mkv"]
 
 try:
     config_file = PROJECT_ROOT.joinpath("config.ini")

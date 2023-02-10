@@ -55,11 +55,14 @@ def clean_empty_dirs(root_dir:Path):
         for file_obj in utils.dir_scan(dir_obj.path, True):
             if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
                 if any(x in file_obj.name for x in const.FILE_EXCLUDES):
-                    if "sample-" in file_obj.name:
+                    if any(x in file_obj.name for x in const.FILES_TO_DELETE):
+                        delete = True
+                    elif "sample-" in file_obj.name:
                         delete = True
                         break
-                    delete = False
-                    pass
+                    else:
+                        delete = False
+                        pass
         if delete:
             dirs_to_delete.append(root_dir.joinpath(dir_obj.name))
     # Prompt user.  Initiate delete if yes
@@ -140,6 +143,8 @@ def __move_shows(shows: list, root_dir:Path):
         season_episode = utils.get_season_episode(show)
         show_name = show.split(season_episode[0])[0].rstrip('_')
         season = __split_season_episode(season_episode)[0].replace("s", "season_")
+        if season == "season_00":
+            season = "specials"
         src = root_dir.joinpath(show)
         try:
             # first match.  Check if show is in show_map
@@ -173,9 +178,10 @@ def __move_shows(shows: list, root_dir:Path):
     if make_dirs:
         # Make dirs that don't exist 
         make_dirs = utils.unique(make_dirs)
+        print("Directories to make:")
         for mdir in make_dirs:
             print(f"   {mdir}")
-        if questions.ask_bool("Do you want to make directories?"):
+        if questions.ask_bool(f"Do you want to make directories?"):
             for mdir in make_dirs:
                 print(f"Making....{mdir}")
                 os.makedirs(mdir)            
@@ -196,6 +202,8 @@ def __sort_media(files_obj):
         if any(x in file_obj.name for x in const.FILES_TO_DELETE):
             print(f"deleting: {file_obj.name}")
             os.remove(file_obj.path)
+        elif any(x in file_obj.name for x in const.FILE_EXCLUDES):
+            pass
         else:
             match = utils.match_for_tv(file_obj.name)
             if match:

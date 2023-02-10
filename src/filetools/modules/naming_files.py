@@ -26,7 +26,10 @@ def rename_files(target_dir):
             print(f"deleting: {file_obj.name}")
             os.remove(file_obj.path)
         file_ext = os.path.splitext(file_obj.name)[1]
-        if any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
+        if any(x in file_ext for x in const.FILE_EXCLUDES):
+            print(f"{file_obj.name} is still downloading")
+            pass
+        elif any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
             if os.path.isdir(file_obj.path):
                 print("This is a directory....passing")
                 pass
