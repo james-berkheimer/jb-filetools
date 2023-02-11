@@ -81,15 +81,19 @@ def clean_empty_dirs(root_dir:Path):
     else:
         print("No directories to delete")
 
-def extract_files(root_dir:Path):
+def extract_files(root_dir:Path):    
     for dir_obj in utils.dir_scan(root_dir):
-        for file_obj in utils.dir_scan(dir_obj.path, True):     
-            if any(x in file_obj.name for x in const.FILE_EXCLUDES):
-                pass
+        files_to_extract = {}
+        still_downloading = False
+        for file_obj in utils.dir_scan(dir_obj.path, True):
+            if ".part" in file_obj.name:
+                still_downloading = True
             elif any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
-                new_name = root_dir.joinpath(file_obj.name)
-                print(f"Extracting....{file_obj.path} to {new_name}")
-                shutil.move(file_obj.path, new_name)
+                files_to_extract[file_obj.path] = root_dir.joinpath(file_obj.name)
+        if still_downloading == False:
+            for old_path, new_path in files_to_extract.items():
+                print(f"Extracting....{old_path} to {new_path}")
+                shutil.move(old_path, new_path)
 
 def move_files(root_dir:Path):
     movies, shows = __sort_media(utils.dir_scan(root_dir, True))
