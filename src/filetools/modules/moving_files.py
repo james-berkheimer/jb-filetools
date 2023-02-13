@@ -126,8 +126,10 @@ def __move_movies(movies: list, root_dir:Path):
     for movie in movies:
         print(movie)
         movie_year = utils.get_year(movie)
-        movie_name = movie.split(f"({movie_year})")[0].rstrip('_')
-        new_movie_path = const.MOVIES_PATH.joinpath(movie_name)
+        # movie_name = movie.split(f"({movie_year})")[0].rstrip('_')
+        filename_woExt, file_ext = os.path.splitext(movie)
+        filename_woExt = filename_woExt.replace("-4k-hdr", "")
+        new_movie_path = const.MOVIES_PATH.joinpath(filename_woExt)
         src = root_dir.joinpath(movie)
         dst = new_movie_path.joinpath(movie)
         if new_movie_path.exists() is False:
