@@ -53,16 +53,16 @@ def clean_empty_dirs(root_dir:Path):
     for dir_obj in utils.dir_scan(root_dir):
         delete = True
         for file_obj in utils.dir_scan(dir_obj.path, True):
+            if ".part" in file_obj.name:
+                delete = False
+                break
             if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
-                if any(x in file_obj.name for x in const.FILE_EXCLUDES):
-                    if any(x in file_obj.name for x in const.FILES_TO_DELETE):
-                        delete = True
-                    elif "sample-" in file_obj.name:
-                        delete = True
-                        break
-                    else:
-                        delete = False
-                        pass
+                if "sample" in file_obj.name.lower():
+                    pass
+                elif "trailer" in file_obj.name.lower():
+                    pass
+                else:
+                    delete = False                
         if delete:
             dirs_to_delete.append(root_dir.joinpath(dir_obj.name))
     # Prompt user.  Initiate delete if yes
