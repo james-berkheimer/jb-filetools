@@ -53,7 +53,8 @@ def clean_empty_dirs(root_dir:Path):
     for dir_obj in utils.dir_scan(root_dir):
         delete = True
         for file_obj in utils.dir_scan(dir_obj.path, True):
-            if ".part" in file_obj.name:
+            filename_woExt, file_ext = os.path.splitext(file_obj.name)
+            if ".part" == file_ext:
                 delete = False
                 break
             if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
@@ -81,18 +82,20 @@ def clean_empty_dirs(root_dir:Path):
     else:
         print("No directories to delete")
 
-def extract_files(root_dir:Path):    
-    for dir_obj in utils.dir_scan(root_dir):
-        files_to_extract = {}
+def extract_files(root_dir:Path):        
+    for dir_obj in utils.dir_scan(root_dir):  
+        files_to_extract = {}      
         still_downloading = False
+        print(f"Searching......{dir_obj.name}")
         for file_obj in utils.dir_scan(dir_obj.path, True):
-            if ".part" in file_obj.name:
+            filename_woExt, file_ext = os.path.splitext(file_obj.name)
+            if ".part" == file_ext:
                 still_downloading = True
             elif any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
                 files_to_extract[file_obj.path] = root_dir.joinpath(file_obj.name)
         if still_downloading == False:
             for old_path, new_path in files_to_extract.items():
-                print(f"Extracting....{old_path} to {new_path}")
+                print(f"Extracting......{old_path}")
                 shutil.move(old_path, new_path)
 
 def move_files(root_dir:Path):
