@@ -135,8 +135,8 @@ def __make_temp_dir(tmpdir:Path):
 
 def __move_movies(movies: list, root_dir:Path):
     for movie in movies:
-        print(movie)
-        movie_year = utils.get_year(movie)
+        # print(movie)
+        # movie_year = utils.get_year(movie)
         # movie_name = movie.split(f"({movie_year})")[0].rstrip('_')
         filename_woExt, file_ext = os.path.splitext(movie)
         filename_woExt = filename_woExt.replace("-4k-hdr", "")
