@@ -74,7 +74,7 @@ def __rename(file_obj):
             raw_episode_name = raw_episode_name.replace("bbc", "").lstrip()
         episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").rstrip()
         new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
-        print(f"Renaming.....{file_obj.path}, {os.path.join(file_path, new_name.lower())}")
+        print(f"Renaming.....{file_obj.path} -> {os.path.join(file_path, new_name.lower())}")
         os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
     else:
         # print(f"Movie file found")
