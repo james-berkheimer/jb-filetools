@@ -88,5 +88,5 @@ def __rename(file_obj):
         year = utils.get_year(filename_woExt)
         filename_woExt_split = filename_woExt.split(year)
         new_name = f"{filename_woExt_split[0]}({year}){fk}{hdr}{file_ext}"
-        print(f"Renaming.....{file_obj.path}, {os.path.join(file_path, new_name)}")
+        print(f"Renaming.....{file_obj.path} -> {os.path.join(file_path, new_name)}")
         os.rename(file_obj.path, os.path.join(file_path, new_name))
