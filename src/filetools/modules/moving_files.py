@@ -87,7 +87,7 @@ def extract_files(root_dir:Path):
     for dir_obj in utils.dir_scan(root_dir):  
         tmpdict = {}      
         still_downloading = False
-        print(f"Processing......{dir_obj.name}")
+        # print(f"Processing......{dir_obj.name}")
         for file_obj in utils.dir_scan(dir_obj.path, True):
             filename_woExt, file_ext = os.path.splitext(file_obj.name)            
             if ".part" == file_ext:
