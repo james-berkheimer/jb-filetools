@@ -21,27 +21,28 @@ import modules.const as const
 
 def rename_files(target_dir):
     for file_obj in utils.dir_scan(target_dir, True):
-        print(f"Let's work on: {file_obj.name}")
+        # print(f"Let's work on: {file_obj.name}")
         if any(x in file_obj.name for x in const.FILES_TO_DELETE):
-            print(f"deleting: {file_obj.name}")
+            print(f"Deleting.....{file_obj.name}")
             os.remove(file_obj.path)
         file_ext = os.path.splitext(file_obj.name)[1]
         if any(x in file_ext for x in const.FILE_EXCLUDES):
-            print(f"{file_obj.name} is still downloading")
+            # print(f"{file_obj.name} is still downloading")
             pass
         elif any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
             if os.path.isdir(file_obj.path):
-                print("This is a directory....passing")
+                # print("This is a directory....passing")
                 pass
             else:
-                print("Valid file, let's rename it")
+                # print("Valid file, let's rename it")
                 try:
                     __rename(file_obj)
                 except:
                     print(traceback.format_exc())
         else:
-            print(f"This is not valid for renaming")
-        print("\n")
+            pass
+            # print(f"This is not valid for renaming")
+        # print("\n")
 
 # --------------------------------------------------------------------------------
 # Private API
@@ -65,7 +66,7 @@ def __rename(file_obj):
     filename_woExt, file_ext = os.path.splitext(file_obj_name)
     season_episode, alt_naming = utils.get_season_episode(file_obj_name)
     if season_episode:
-        print(f"TV file found")
+        # print(f"TV file found")
         raw_episode_name = file_obj_name.split(season_episode)[0]
         if alt_naming:
             season_episode = __fix_season_episode(season_episode)
@@ -73,10 +74,10 @@ def __rename(file_obj):
             raw_episode_name = raw_episode_name.replace("bbc", "").lstrip()
         episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").rstrip()
         new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
-        print(f"RENAMING: {file_obj.path}, {os.path.join(file_path, new_name.lower())}")
+        print(f"Renaming.....{file_obj.path}, {os.path.join(file_path, new_name.lower())}")
         os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
     else:
-        print(f"Movie file found")
+        # print(f"Movie file found")
         if "2160p" in filename_woExt:
             fk = "-4K"
         if "hdr" in filename_woExt or "hdr10plus" in filename_woExt:
@@ -87,5 +88,5 @@ def __rename(file_obj):
         year = utils.get_year(filename_woExt)
         filename_woExt_split = filename_woExt.split(year)
         new_name = f"{filename_woExt_split[0]}({year}){fk}{hdr}{file_ext}"
-        print(f"RENAMING: {file_obj.path}, {os.path.join(file_path, new_name)}")
+        print(f"Renaming.....{file_obj.path}, {os.path.join(file_path, new_name)}")
         os.rename(file_obj.path, os.path.join(file_path, new_name))
