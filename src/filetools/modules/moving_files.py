@@ -57,7 +57,7 @@ def clean_empty_dirs(root_dir:Path):
             if ".part" == file_ext:
                 delete = False
                 break
-            if any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
+            if any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
                 if "sample" in file_obj.name.lower():
                     pass
                 elif "trailer" in file_obj.name.lower():
@@ -92,7 +92,7 @@ def extract_files(root_dir:Path):
             filename_woExt, file_ext = os.path.splitext(file_obj.name)            
             if ".part" == file_ext:
                 still_downloading = True
-            elif any(x in file_obj.name for x in const.VIDEO_FILE_EXTENSIONS):
+            elif any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
                 if "sample" in file_obj.name.lower():
                     pass
                 elif "trailer" in file_obj.name.lower():
@@ -104,7 +104,7 @@ def extract_files(root_dir:Path):
     print("------------------------------------------------------------------------------------------")
     for old_path, new_path in files_to_extract.items():
         print(f"Extracting......{old_path}")
-        shutil.move(old_path, new_path)
+        # shutil.move(old_path, new_path)
 
 def move_files(root_dir:Path):
     movies, shows = __sort_media(utils.dir_scan(root_dir, True))

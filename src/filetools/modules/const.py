@@ -17,7 +17,8 @@ import modules.utils as utils
 # --------------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).parent.parent
 CURRENT_WORKING_DIR = Path.cwd()
-FILES_TO_DELETE = [".DS_Store","RARBG.txt",".srt",".nfo",".sfv","humbs.db",".txt","Sample.mkv", "Trailer.mkv"]
+FILES_TO_DELETE = [".DS_Store","RARBG.txt",".srt",".nfo",".sfv","Thumbs.db",
+                   ".txt","Sample.mkv", "Trailer.mkv",".jpg", ".vtx"]
 VIDEO_FILE_EXTENSIONS = [".mkv",".mp4",".mpeg",".mpg",".mov",".avi"]
 FILE_EXCLUDES = [".part", "Sample.mkv", "sample.mkv", "Trailer.mkv"]
 
