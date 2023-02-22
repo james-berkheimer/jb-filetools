@@ -104,7 +104,7 @@ def extract_files(root_dir:Path):
     print("------------------------------------------------------------------------------------------")
     for old_path, new_path in files_to_extract.items():
         print(f"Extracting......{old_path}")
-        # shutil.move(old_path, new_path)
+        shutil.move(old_path, new_path)
 
 def move_files(root_dir:Path):
     movies, shows = __sort_media(utils.dir_scan(root_dir, True))
