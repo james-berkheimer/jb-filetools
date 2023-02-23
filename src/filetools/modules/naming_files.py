@@ -66,13 +66,14 @@ def __rename(file_obj):
     filename_woExt, file_ext = os.path.splitext(file_obj_name)
     season_episode, alt_naming = utils.get_season_episode(file_obj_name)
     if season_episode:
-        # print(f"TV file found")
         raw_episode_name = file_obj_name.split(season_episode)[0]
         if alt_naming:
             season_episode = __fix_season_episode(season_episode)
         if 'bbc' in raw_episode_name:
             raw_episode_name = raw_episode_name.replace("bbc", "").lstrip()
-        episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").rstrip()
+        print(raw_episode_name)
+        episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").replace("_-_", "_").rstrip()
+        print(episode_name)
         new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
         print(f"Renaming.....{file_obj.path} -> {os.path.join(file_path, new_name.lower())}")
         os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
@@ -84,7 +85,7 @@ def __rename(file_obj):
             hdr = "-hdr"
         if "." in filename_woExt:
             filename_woExt = "_".join(filename_woExt.split('.')).lower()
-        filename_woExt = filename_woExt.replace(" (", "_").replace(" ", "_").lower()
+        filename_woExt = filename_woExt.replace(" (", "_").replace(" ", "_").lower()        
         year = utils.get_year(filename_woExt)
         filename_woExt_split = filename_woExt.split(year)
         new_name = f"{filename_woExt_split[0]}({year}){fk}{hdr}{file_ext}"
