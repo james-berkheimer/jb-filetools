@@ -209,8 +209,12 @@ def __move_shows(shows: list, root_dir:Path):
             print(dest)
         if questions.ask_bool("Do you want to move files?"):
             for src, dest in move_dict.items():
-                print(f"moving....{dest}")
-                shutil.move(src, dest)
+                if os.path.isfile(dest):
+                    print(f"file exists....{dest}")
+                    pass
+                else:
+                    print(f"moving....{dest}")
+                    shutil.move(src, dest)
                     
 def __sort_media(files_obj):
     movies = []

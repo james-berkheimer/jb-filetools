@@ -53,6 +53,17 @@ def get_season_episode(filename):
         else:
             return None, alt_naming
 
+def get_show_map():
+    try:
+        show_map = const.PROJECT_ROOT.joinpath("shows_map.ini")
+    except:
+        print("No show_map.ini found, let's make one...")
+        make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
+    import configparser
+    config = configparser.ConfigParser()
+    config.read(show_map)
+    return config
+
 def get_year(target_string):
     try:
         matches = re.findall(r"[0-9]{4}", target_string)

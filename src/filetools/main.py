@@ -53,6 +53,12 @@ def main():
             print(f"----------- {action} -----------")
             moving_files.clean_empty_dirs(root_dir) 
             print("\n")
+
+    if parsed_args.fixnames:          
+        for action in parsed_args.fixnames:
+            print(f"----------- {action} -----------")
+            naming_files.fix_names(root_dir)
+            print("\n")
             
     if parsed_args.makeconfig:
         print("calling make config")

@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 #
-# moving_files.py
+# naming_files.py
 #
 
 # --------------------------------------------------------------------------------
@@ -18,6 +18,12 @@ import modules.const as const
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
+def fix_names(target_dir):
+    print("hello")
+    show_map = utils.get_show_map()
+    for key in show_map['Shows']:
+        # if "travelers_2016" 
+        print(key)
 
 def rename_files(target_dir):
     for file_obj in utils.dir_scan(target_dir, True):

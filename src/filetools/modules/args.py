@@ -70,6 +70,14 @@ PARSER.add_argument(
     action='store_true',
     help="Prints out the config.ini")
 
+PARSER.add_argument(
+    "-fn",
+    "--fix-names",
+    dest='fixnames',
+    const='fix_names',
+    action='append_const',
+    help="Fix file names to match them to the show maps")
+
 
 
 # --------------------------------------------------------------------------------
