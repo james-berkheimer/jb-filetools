@@ -2,7 +2,7 @@
 jb-filetools
 ===========
 
-A collection of scripts used to help manage downloaded files.
+[WIP] A collection of scripts used to help manage downloaded files.
 
 Script descriptions
 =========
