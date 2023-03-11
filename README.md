@@ -10,8 +10,8 @@ A collection of tools built on Python 3.10 used to help manage downloaded files 
     Future versions will use a distribution format and be callable on it's own.
 
 # Options
-    CMD {EMPTY}                 Running the command without any flags will print out the current working directory.
-    CMD {PATH}                  Adding a file path after the command and before the flags will set the directory path to be worked on.
+    {EMPTY}                     Running the command without any flags will print out the current working directory.
+    {PATH}                      Adding a file path after the command and before the flags will set the directory path to be worked on.
     -h, --help                  show this help message and exit.
     -e, --extract-files         Extract specified video files from subdirectories in the current directory.
     -rn, --rename-files         Rename files to standardized formats i.e. (show_s01e01.mkv, movie_(2022).mkv).
