@@ -5,7 +5,7 @@ jb-filetools
 A collection of tools built on Python 3.10 used to help manage downloaded files and direct them to a local file server.
 
 # INSTALLATION
-    Simple install in any convinent.  Run with a Python call i.e. python jb-filetools/src/filetools/main.py
+    Simple install in any convinent file location.  Run with a Python call i.e. python jb-filetools/src/filetools/main.py
     
     Future versions will use a distribution format and be callable on it's own.
 
