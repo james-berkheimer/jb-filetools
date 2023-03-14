@@ -62,12 +62,18 @@ def __fix_season_episode(season_episode):
 
 def __rename(file_obj):
     new_name:str()
-    fk, hdr = "", ""
+    fk, hdr,flags_name = "", "", ""
+    flags = []
+     
     file_obj_name = file_obj.name.lower()
     if "2160p" in file_obj_name:
-            fk = "-4K"
+            flags.append("4K")
+            
     if "hdr" in file_obj_name or "hdr10" in file_obj_name or "hdr10plus" in file_obj_name:
-        hdr = "-hdr"
+        flags.append("hdr")
+    if flags:
+        flags_name = f"_[{'_'.join(flags)}]"
+        
     file_path = os.path.split(file_obj.path)[0]
     filename_woExt, file_ext = os.path.splitext(file_obj_name)
     season_episode, alt_naming = utils.get_season_episode(file_obj_name)
@@ -78,7 +84,7 @@ def __rename(file_obj):
         if 'bbc' in raw_episode_name:
             raw_episode_name = raw_episode_name.replace("bbc", "").lstrip()
         episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").replace("_-_", "_").rstrip()
-        new_name = f"{episode_name}{season_episode}{fk}{hdr}{file_ext}"
+        new_name = f"{episode_name}{season_episode}{flags_name}{file_ext}"
         print(f"Renaming.....{file_obj.path} -> {os.path.join(file_path, new_name.lower())}")
         os.rename(file_obj.path, os.path.join(file_path, new_name.lower()))
     else:
