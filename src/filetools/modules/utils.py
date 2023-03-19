@@ -101,10 +101,10 @@ def make_config():
             paths.remove(choice)
 
 def match_for_tv(filename):    
-    return re.search(r".?((s\d{2}|s\d{4})e\d{2}).?", filename, re.I)
+    return re.search(r".?((s\d{2}|s\d{4})(?:.?)e\d{2}).?", filename, re.I)
 
 def match_for_altseason(filename):
-    return re.search(r'''(?ix)\s*(\d{1,2})(?:of|^)\s*(\d{2})''', filename)
+    return re.search(r'''(?ix)\s*(\d{1,2})(?:of|^)\s*(\d{1,2})''', filename)
 
 def make_shows_map():
     config = configparser.ConfigParser()
