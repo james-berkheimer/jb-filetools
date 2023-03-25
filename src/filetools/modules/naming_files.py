@@ -55,7 +55,8 @@ def rename_files(target_dir):
 # --------------------------------------------------------------------------------
 def __fix_season_episode(season_episode):
     sortmatch = season_episode.lower().split("of")
-    season = f"s{int(sortmatch[0]):02}"
+    # season = f"s{int(sortmatch[0]):02}"
+    season = f"s01"
     episode = f"e{int(sortmatch[1]):02}"
     if season and episode:
         return f'{season}{episode}'
