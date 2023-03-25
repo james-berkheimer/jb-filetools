@@ -83,6 +83,8 @@ def __rename(file_obj):
             season_episode = __fix_season_episode(season_episode)
         if 'bbc' in raw_episode_name:
             raw_episode_name = raw_episode_name.replace("bbc", "").lstrip()
+            if raw_episode_name[0] == '.':
+                raw_episode_name = raw_episode_name[1:]
         episode_name = raw_episode_name.replace(" ", "_").replace(".", "_").replace("'", "").replace("!", "").replace("_-_", "_").rstrip()
         new_name = f"{episode_name}{season_episode}{flags_name}{file_ext}"
         print(f"Renaming.....{file_obj.path} -> {os.path.join(file_path, new_name.lower())}")

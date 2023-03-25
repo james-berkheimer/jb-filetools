@@ -24,8 +24,9 @@ import modules.questions as questions
 # --------------------------------------------------------------------------------
 def dir_scan(scan_path:str, getfiles=False):
     scan_obj = os.scandir(scan_path)
+    scan_obj_sorted = sorted(scan_obj, key=lambda e: e.name)
     scan_output = []
-    for root_scan_entry in scan_obj:
+    for root_scan_entry in scan_obj_sorted:
         if getfiles == False:
             if root_scan_entry.is_dir():
                 scan_output.append(root_scan_entry)
