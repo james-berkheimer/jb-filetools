@@ -12,6 +12,7 @@ from pathlib import Path
 import configparser
 import modules.utils as utils
 
+
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
@@ -21,6 +22,7 @@ FILES_TO_DELETE = [".DS_Store","RARBG.txt",".srt",".nfo",".sfv","Thumbs.db",
                    ".txt","Sample.mkv", "Trailer.mkv",".jpg", ".vtx"]
 VIDEO_FILE_EXTENSIONS = [".mkv",".mp4",".mpeg",".mpg",".mov",".avi"]
 FILE_EXCLUDES = [".part", "Sample.mkv", "sample.mkv", "Trailer.mkv"]
+DOC_SHOWS = ["Horizon", "Frontline", "American Experience", "NOVA"]
 
 try:
     config_file = PROJECT_ROOT.joinpath("config.ini")
