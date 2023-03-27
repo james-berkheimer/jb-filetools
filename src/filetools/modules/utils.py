@@ -14,17 +14,17 @@ from pathlib import Path
 import configparser
 import modules.const as const
 import modules.questions as questions
-import tvdb_v4_official
-from thefuzz import fuzz
-from thefuzz import process
+# import tvdb_v4_official
+# from thefuzz import fuzz
+# from thefuzz import process
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-try:
-    TVDB = tvdb_v4_official.TVDB("21f6c950-88b4-4491-bdb6-4f93f3c2d414", pin="1X0KXTWN")
-except:
-    print("!! UNABLE TO CONNECT TO TVDB !!")
+# try:
+#     TVDB = tvdb_v4_official.TVDB("21f6c950-88b4-4491-bdb6-4f93f3c2d414", pin="1X0KXTWN")
+# except:
+#     print("!! UNABLE TO CONNECT TO TVDB !!")
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
@@ -149,12 +149,12 @@ def __get_episode_data(season):
             season_dict[episode_name] = season_episode
         return(season_dict)
 
-def __get_series_data(series_id):
-    series = TVDB.get_series_extended(series_id)
-    series_data = {}
-    for season in sorted(series["seasons"], key=lambda x: (x["type"]["name"], x["number"])):
-        if season["type"]["name"] == "Aired Order":
-            season = TVDB.get_season_extended(season["id"])
-            season_data = __get_episode_data(season)
-            series_data = __dict_merge(series_data, season_data)
-    return series_data
+# def __get_series_data(series_id):
+#     series = TVDB.get_series_extended(series_id)
+#     series_data = {}
+#     for season in sorted(series["seasons"], key=lambda x: (x["type"]["name"], x["number"])):
+#         if season["type"]["name"] == "Aired Order":
+#             season = TVDB.get_season_extended(season["id"])
+#             season_data = __get_episode_data(season)
+#             series_data = __dict_merge(series_data, season_data)
+#     return series_data
