@@ -27,21 +27,19 @@ def rename_files(target_dir):
         file_ext = os.path.splitext(file_obj.name)[1]
         if any(x in file_ext for x in const.FILE_EXCLUDES):
             pass
-        elif any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
-            if os.path.isdir(file_obj.path):
-                pass
-            else:
-                if any(x.lower() in file_obj.name.replace(".", " ").lower() for x in const.DOC_SHOWS):                
-                    print(file_obj.name)
-                    print("Doc found")
-                else:
-                    try:
-                        __rename(file_obj)
-                    except:
-                        print(f"\nFailed on...{file_obj.name}")
-                        print(traceback.format_exc())
-        else:
+        if os.path.isdir(file_obj.path):
             pass
+        else:
+            if any(x.lower() in file_obj.name.replace(".", " ").lower() for x in const.DOC_SHOWS):                
+                print(file_obj.name)
+                print("Doc found")
+            else:
+                try:
+                    __rename(file_obj)
+                except:
+                    print(f"\nFailed on...{file_obj.name}")
+                    print(traceback.format_exc())
+
 
 # --------------------------------------------------------------------------------
 # Private API
