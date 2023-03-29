@@ -23,6 +23,8 @@ def main():
     ''' Main function
     This is a starting point of the application execution.
     '''
+    print("Python version")
+    print (sys.version)
     # make/Update show_map
     utils.make_shows_map()
     
