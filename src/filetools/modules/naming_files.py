@@ -34,21 +34,7 @@ def rename_files(target_dir):
                 except:
                     print(f"\nFailed on...{file_obj.name}")
                     print(traceback.format_exc())
-
-        # if os.path.isdir(file_obj.path):
-        #     pass
-        # else:
-            # if any(x.lower() in file_obj.name.replace(".", " ").lower() for x in const.DOC_SHOWS):                
-            #     print(file_obj.name)
-            #     print("Doc found")
-            # else:
-            #     try:
-            #         __rename(file_obj)
-            #     except:
-            #         print(f"\nFailed on...{file_obj.name}")
-            #         print(traceback.format_exc())
-
-
+                    
 # --------------------------------------------------------------------------------
 # Private API
 # --------------------------------------------------------------------------------
