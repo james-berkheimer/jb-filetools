@@ -19,7 +19,6 @@ import shutil
 import traceback
 from pathlib import Path
 
-import const
 import modules.const as const
 import modules.questions as questions
 import modules.utils as utils
