@@ -7,12 +7,14 @@
 # Imports
 # --------------------------------------------------------------------------------
 
-import os, shutil, traceback
+import os
+import shutil
+import traceback
 from pathlib import Path
-import modules.utils as utils
+
 import modules.const as const
 import modules.questions as questions
-
+import modules.utils as utils
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -22,33 +24,35 @@ import modules.questions as questions
 # Public API
 # --------------------------------------------------------------------------------
 
-def add_to_dir(root_dir:Path):
+
+def add_to_dir(root_dir: Path):
     files = []
     tmpdir = __make_temp_dir(root_dir.joinpath("_tmp"))
     for entry in os.scandir(root_dir):
         if entry.is_dir():
             continue
         else:
-            files.append(entry.name) 
-            
+            files.append(entry.name)
+
     for f in files:
         if any(x in f for x in const.VIDEO_FILE_EXTENSIONS):
             newDir = f[:-11]
             newpath = Path(root_dir + newDir)
-            src = dst = root_dir.joinpath(f) 
+            src = dst = root_dir.joinpath(f)
             dst = newpath.joinpath(f)
-            print("Moving: %s to %s" % (src, dst))      
+            print("Moving: %s to %s" % (src, dst))
             toTmp = os.path.join(tmpdir, newDir)
             print("Moving: %s to %s" % (newpath, toTmp))
             try:
                 os.mkdir(newpath)
                 shutil.move(src, dst)
-                shutil.move(newpath, toTmp, copy_function = shutil.copytree)
+                shutil.move(newpath, toTmp, copy_function=shutil.copytree)
             except:
                 print(traceback.format_exc())
         print("\n")
 
-def clean_empty_dirs(root_dir:Path):
+
+def clean_empty_dirs(root_dir: Path):
     dirs_to_delete = []
     for dir_obj in utils.dir_scan(root_dir):
         delete = True
@@ -63,13 +67,13 @@ def clean_empty_dirs(root_dir:Path):
                 elif "trailer" in file_obj.name.lower():
                     pass
                 else:
-                    delete = False                
+                    delete = False
         if delete:
             dirs_to_delete.append(root_dir.joinpath(dir_obj.name))
     # Prompt user.  Initiate delete if yes
     if dirs_to_delete:
         print("Empty directories:")
-        for dir_to_delete in dirs_to_delete:    
+        for dir_to_delete in dirs_to_delete:
             print(f"{dir_to_delete}")
         print("\n")
         if questions.ask_bool("Delete directories?"):
@@ -82,31 +86,39 @@ def clean_empty_dirs(root_dir:Path):
     else:
         print("No directories to delete")
 
-def extract_files(root_dir:Path):
-    files_to_extract = {}         
-    for dir_obj in utils.dir_scan(root_dir):  
-        tmpdict = {}      
+
+def extract_files(root_dir: Path):
+    files_to_extract = {}
+
+    for dir_obj in utils.dir_scan(root_dir):
+        if dir_obj.name == "in-progress":
+            continue
+
+        tmpdict = {}
         still_downloading = False
-        # print(f"Processing......{dir_obj.name}")
+
         for file_obj in utils.dir_scan(dir_obj.path, True):
-            filename_woExt, file_ext = os.path.splitext(file_obj.name)            
-            if ".part" == file_ext:
+            filename_woExt, file_ext = os.path.splitext(file_obj.name)
+
+            if file_ext == ".part":
                 still_downloading = True
-            elif any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
-                if "sample" in file_obj.name.lower():
-                    pass
-                elif "trailer" in file_obj.name.lower():
-                    pass
-                else:
-                    tmpdict[file_obj.path] = root_dir.joinpath(file_obj.name)
-        if still_downloading == False:
+                break
+
+            if any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
+                if "sample" in file_obj.name.lower() or "trailer" in file_obj.name.lower():
+                    continue
+                tmpdict[file_obj.path] = root_dir.joinpath(file_obj.name)
+
+        if not still_downloading:
             files_to_extract.update(tmpdict)
+
     print("------------------------------------------------------------------------------------------")
     for old_path, new_path in files_to_extract.items():
         print(f"Extracting......{old_path}")
         shutil.move(old_path, new_path)
 
-def move_files(root_dir:Path):
+
+def move_files(root_dir: Path):
     movies, shows = __sort_media(utils.dir_scan(root_dir, True))
     __move_movies(movies, root_dir)
     __move_shows(shows, root_dir)
@@ -122,18 +134,21 @@ def __get_show_map():
         print("No show_map.ini found, let's make one...")
         utils.make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
     import configparser
+
     config = configparser.ConfigParser()
     config.read(show_map)
     return config
 
-def __make_temp_dir(tmpdir:Path):
+
+def __make_temp_dir(tmpdir: Path):
     if tmpdir.exists():
         pass
     else:
         os.mkdir(tmpdir)
-    return(tmpdir)
+    return tmpdir
 
-def __move_movies(movies: list, root_dir:Path):
+
+def __move_movies(movies: list, root_dir: Path):
     for movie in movies:
         # print(movie)
         # movie_year = utils.get_year(movie)
@@ -144,7 +159,7 @@ def __move_movies(movies: list, root_dir:Path):
         src = root_dir.joinpath(movie)
         dst = new_movie_path.joinpath(movie)
         if new_movie_path.exists() is False:
-            print(f"Making: {new_movie_path}")            
+            print(f"Making: {new_movie_path}")
             os.mkdir(new_movie_path)
         if dst.is_file() is False:
             print(f"Moving: {src} to {dst}")
@@ -152,13 +167,14 @@ def __move_movies(movies: list, root_dir:Path):
         else:
             print(f"Movie already in server: {movie}")
 
-def __move_shows(shows: list, root_dir:Path):
+
+def __move_shows(shows: list, root_dir: Path):
     move_dict = {}
     make_dirs = []
     skip = []
     for show in shows:
         season_episode = utils.get_season_episode(show)
-        show_name = show.split(season_episode[0])[0].rstrip('_')
+        show_name = show.split(season_episode[0])[0].rstrip("_")
         season = __split_season_episode(season_episode)[0].replace("s", "season_")
         if season == "season_00":
             season = "specials"
@@ -166,19 +182,19 @@ def __move_shows(shows: list, root_dir:Path):
         try:
             # first match.  Check if show is in show_map
             show_map = __get_show_map()
-            matched_path = Path(show_map['Shows'][show_name])
-            season_path = matched_path.joinpath(season)  
-            # Second match.  Check if season exists                     
+            matched_path = Path(show_map["Shows"][show_name])
+            season_path = matched_path.joinpath(season)
+            # Second match.  Check if season exists
             if season_path.exists() is False:
                 make_dirs.append(season_path)
-            move_dict[src] = season_path.joinpath(show) 
+            move_dict[src] = season_path.joinpath(show)
         except:
             # If show is not in show_map, we will make a new show directory
             if show_name not in skip:
-                print(f"{show_name} does not exist") 
+                print(f"{show_name} does not exist")
                 if questions.ask_bool(f"Do you want to add {show_name}?"):
                     if questions.ask_multichoice(["Television", "Documentary"]) == "Television":
-                        show_type_path = const.TELEVISION_PATH              
+                        show_type_path = const.TELEVISION_PATH
                     else:
                         show_type_path = const.DOCUMENTARIES_PATH
                     show_network = questions.ask_text_input("Please enter the network the show is on")
@@ -193,7 +209,7 @@ def __move_shows(shows: list, root_dir:Path):
                 else:
                     skip.append(show_name)
     if make_dirs:
-        # Make dirs that don't exist 
+        # Make dirs that don't exist
         make_dirs = utils.unique(make_dirs)
         print("Directories to make:")
         for mdir in make_dirs:
@@ -201,7 +217,7 @@ def __move_shows(shows: list, root_dir:Path):
         if questions.ask_bool(f"Do you want to make directories?"):
             for mdir in make_dirs:
                 print(f"Making....{mdir}")
-                os.makedirs(mdir)            
+                os.makedirs(mdir)
     print("\n")
     if move_dict:
         # Let's move these files
@@ -215,7 +231,8 @@ def __move_shows(shows: list, root_dir:Path):
                 else:
                     print(f"moving....{dest}")
                     shutil.move(src, dest)
-                    
+
+
 def __sort_media(files_obj):
     movies = []
     shows = []
@@ -233,9 +250,9 @@ def __sort_media(files_obj):
                 movies.append(file_obj.name)
     return movies, shows
 
+
 def __split_season_episode(season_episode):
-    split = (season_episode[0].split('e'))
+    split = season_episode[0].split("e")
     season = split[0]
     episode = f"e{split[1]}"
     return season, episode
-
