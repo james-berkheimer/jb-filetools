@@ -91,7 +91,7 @@ def extract_files(root_dir: Path):
     files_to_extract = {}
 
     for dir_obj in utils.dir_scan(root_dir):
-        if dir_obj.name == "in-progress":
+        if dir_obj.name == "_in-progress":
             continue
 
         tmpdict = {}
