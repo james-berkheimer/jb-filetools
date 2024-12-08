@@ -22,7 +22,6 @@ from pathlib import Path
 import modules.const as const
 import modules.questions as questions
 import modules.utils as utils
-import utils
 
 
 def add_to_dir(root_dir: Path):
