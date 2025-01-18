@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "filetools"
-version = "1.0.0"
+version = "0.0.0" # Placeholder for the dynamic version
 authors = [
   { name="James Berkheimer", email="james.berkheimer@gmail.com" },
 ]
@@ -17,6 +17,12 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.scripts]
+filetools = "filetools.main:main"
+
 [project.urls]
 "Homepage" = "https://github.com/james-berkheimer/jb-filetools"
 "Bug Tracker" = "https://github.com/james-berkheimer/jb-filetools/issues"
+
+[tool.hatch.version]
+path = "VERSION"

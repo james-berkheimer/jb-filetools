@@ -9,7 +9,8 @@
 # imports
 # --------------------------------------------------------------------------------
 import argparse
-import modules.const as const
+
+import const as const
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -19,7 +20,7 @@ import modules.const as const
 # Construct Args
 # --------------------------------------------------------------------------------
 # Establish args PARSER
-PARSER = argparse.ArgumentParser(prog="filetools", 
+PARSER = argparse.ArgumentParser(prog="filetools",
                                     description="Let's parse some files",
                                     allow_abbrev=False)
 PARSER.add_argument(
@@ -49,7 +50,7 @@ PARSER.add_argument(
 
 PARSER.add_argument(
     "-m",
-    "--move-files",        
+    "--move-files",
     dest='movefiles',
     const='move_files',
     action='append_const',
@@ -57,7 +58,7 @@ PARSER.add_argument(
 
 PARSER.add_argument(
     "-ded",
-    "--delete-empty-dirs",        
+    "--delete-empty-dirs",
     dest='deleteemptydirs',
     const='delete_empty_dirs',
     action='append_const',

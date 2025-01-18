@@ -8,10 +8,10 @@
 # --------------------------------------------------------------------------------
 # Imports
 # --------------------------------------------------------------------------------
-from pathlib import Path
 import configparser
-import modules.utils as utils
+from pathlib import Path
 
+import utils as utils
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -33,8 +33,8 @@ try:
     TELEVISION_PATH = Path(__config['paths']['television'])
     DOCUMENTARIES_PATH = Path(__config['paths']['documentaries'])
     MOVIES_PATH = Path(__config['paths']['movies'])
-except:
-    print("No congif.ini found, let's make one...") 
+except configparser.Error:
+    print("No congif.ini found, let's make one...")
     utils.make_config()
 
 

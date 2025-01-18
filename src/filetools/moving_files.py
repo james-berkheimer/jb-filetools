@@ -12,9 +12,9 @@ import shutil
 import traceback
 from pathlib import Path
 
-import modules.const as const
-import modules.questions as questions
-import modules.utils as utils
+import const as const
+import questions as questions
+import utils as utils
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -47,7 +47,7 @@ def add_to_dir(root_dir: Path):
                 os.mkdir(newpath)
                 shutil.move(src, dst)
                 shutil.move(newpath, toTmp, copy_function=shutil.copytree)
-            except:
+            except Exception:
                 print(traceback.format_exc())
         print("\n")
 
@@ -130,7 +130,7 @@ def move_files(root_dir: Path):
 def __get_show_map():
     try:
         show_map = const.PROJECT_ROOT.joinpath("shows_map.ini")
-    except:
+    except KeyError:
         print("No show_map.ini found, let's make one...")
         utils.make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
     import configparser
@@ -188,7 +188,7 @@ def __move_shows(shows: list, root_dir: Path):
             if season_path.exists() is False:
                 make_dirs.append(season_path)
             move_dict[src] = season_path.joinpath(show)
-        except:
+        except KeyError:
             # If show is not in show_map, we will make a new show directory
             if show_name not in skip:
                 print(f"{show_name} does not exist")
@@ -214,7 +214,7 @@ def __move_shows(shows: list, root_dir: Path):
         print("Directories to make:")
         for mdir in make_dirs:
             print(f"   {mdir}")
-        if questions.ask_bool(f"Do you want to make directories?"):
+        if questions.ask_bool("Do you want to make directories?"):
             for mdir in make_dirs:
                 print(f"Making....{mdir}")
                 os.makedirs(mdir)

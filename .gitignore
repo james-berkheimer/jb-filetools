@@ -164,3 +164,4 @@ cython_debug/
 /bin/legacy
 /src/filetools/config.ini
 /src/filetools/shows_map.ini
+.vscode
