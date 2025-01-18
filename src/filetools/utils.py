@@ -8,12 +8,13 @@
 # --------------------------------------------------------------------------------
 # Imports
 # --------------------------------------------------------------------------------
+import configparser
 import os
 import re
-from pathlib import Path
-import configparser
-import modules.const as const
-import modules.questions as questions
+
+import const as const
+import questions as questions
+
 # import tvdb_v4_official
 # from thefuzz import fuzz
 # from thefuzz import process
@@ -33,7 +34,7 @@ def dir_scan(scan_path:str, getfiles=False):
     scan_obj_sorted = sorted(scan_obj, key=lambda e: e.name)
     scan_output = []
     for root_scan_entry in scan_obj_sorted:
-        if getfiles == False:
+        if not getfiles:
             if root_scan_entry.is_dir():
                 scan_output.append(root_scan_entry)
         else:
@@ -63,7 +64,7 @@ def get_season_episode(filename):
 def get_show_map():
     try:
         show_map = const.PROJECT_ROOT.joinpath("shows_map.ini")
-    except:
+    except FileNotFoundError:
         print("No show_map.ini found, let's make one...")
         make_shows_map([const.TELEVISION_PATH, const.DOCUMENTARIES_PATH])
     import configparser
@@ -74,19 +75,19 @@ def get_show_map():
 def get_year(target_string):
     try:
         matches = re.findall(r"[0-9]{4}", target_string)
-    except:
-        print(f"NO YEAR MATCHES")
-        return False        
+    except FileNotFoundError:
+        print("NO YEAR MATCHES")
+        return False
     filteredMatches = []
     for m in matches:
         if int(m) in range(1900,2030):
             filteredMatches.append(m)
-    return(filteredMatches[-1])  
+    return(filteredMatches[-1])
 
 def make_config():
     '''TODO
-    For eventual public release.  Make a function that 
-    allows the user to generate a config. 
+    For eventual public release.  Make a function that
+    allows the user to generate a config.
     '''
     config_file = configparser.ConfigParser()
     config_file.optionxform = str
@@ -107,7 +108,7 @@ def make_config():
             print(f"Adding to config.ini: [paths]:{choice} = {path}")
             paths.remove(choice)
 
-def match_for_tv(filename):    
+def match_for_tv(filename):
     return re.search(r".?((s\d{2}|s\d{4})(?:.?)e\d{2}).?", filename, re.I)
 
 def match_for_altseason(filename):
@@ -132,7 +133,7 @@ def unique(lst):
 
 
 # --------------------------------------------------------------------------------
-# Private API
+# Private Methods
 # --------------------------------------------------------------------------------
 def __dict_merge(dict1, dict2):
     res = dict1 | dict2

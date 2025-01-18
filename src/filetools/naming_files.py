@@ -9,8 +9,8 @@
 import os
 import traceback
 
-import modules.const as const
-import modules.utils as utils
+import const as const
+import utils as utils
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -34,7 +34,7 @@ def rename_files(target_dir):
             else:
                 try:
                     __rename(file_obj)
-                except:
+                except Exception:
                     print(f"\nFailed on...{file_obj.name}")
                     print(traceback.format_exc())
 
@@ -45,14 +45,14 @@ def rename_files(target_dir):
 def __fix_season_episode(season_episode):
     sortmatch = season_episode.lower().split("of")
     # season = f"s{int(sortmatch[0]):02}"
-    season = f"s01"
+    season = "s01"
     episode = f"e{int(sortmatch[0]):02}"
     if season and episode:
         return f"{season}{episode}"
 
 
 def __rename(file_obj):
-    new_name: str()
+    new_name = ""
     fk, hdr, flags_name = "", "", ""
     flags = []
 
