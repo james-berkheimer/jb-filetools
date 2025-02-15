@@ -9,8 +9,7 @@
 import os
 import traceback
 
-import const as const
-import utils as utils
+from . import constants, utils
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -24,12 +23,12 @@ import utils as utils
 
 def rename_files(target_dir):
     for file_obj in utils.dir_scan(target_dir, True):
-        if any(x in file_obj.name for x in const.FILES_TO_DELETE):
+        if any(x in file_obj.name for x in constants.FILES_TO_DELETE):
             print(f"Deleting.....{file_obj.name}")
             os.remove(file_obj.path)
         file_ext = os.path.splitext(file_obj.name)[1]
-        if any(x in file_ext for x in const.VIDEO_FILE_EXTENSIONS):
-            if any(x in file_ext for x in const.FILE_EXCLUDES):
+        if any(x in file_ext for x in constants.VIDEO_FILE_EXTENSIONS):
+            if any(x in file_ext for x in constants.FILE_EXCLUDES):
                 pass
             else:
                 try:

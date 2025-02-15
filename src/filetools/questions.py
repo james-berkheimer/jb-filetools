@@ -1,71 +1,62 @@
-#!/usr/bin/env python
-#
-# modules/questions.py
-#
-# This file will store question methods for user input
-#
-
 # --------------------------------------------------------------------------------
 # Imports
 # --------------------------------------------------------------------------------
-import re, sys
-from typing import Any
+import re
+import sys
+from typing import Any, Dict, List
+
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-class QuestionExceptions(Exception):    
+class QuestionError(Exception):
     pass
+
 
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
 
-def ask_bool(qbool:bool, default_value: Any = None) -> Any:
+
+def ask_bool(question: str, default_value: Any = None) -> Any:
     answer = None
-    question = qbool + " [y/n]? "
+    prompt = question + " [y/n]? "
     while True:
         print("")
-        user_input = input(question)
-        if re.match("y", user_input):
+        user_input = input(prompt)
+        if re.match("y", user_input, re.IGNORECASE):
             answer = True
             break
-        elif re.match("n", user_input):
+        elif re.match("n", user_input, re.IGNORECASE):
             answer = False
             break
-        elif  not user_input.strip() and default_value is not None:
+        elif not user_input.strip() and default_value is not None:
             answer = default_value
             break
         else:
-            continue   
+            continue
     return answer
 
-def ask_multichoice(qlist: list):
-    qstring = ""
-    qdict = {}
+
+def ask_multichoice(choices: List[str]) -> str:
+    prompt = ""
+    choice_dict: Dict[str, str] = {}
     # Let's form the question to present to the user
     try:
-        qdict = { str(i+1) : qlist[i] for i in range(0, len(qlist) ) }
-        for k,v in qdict.items():
-            qstring+= f"{k}) {v}\n"
+        choice_dict = {str(i + 1): choices[i] for i in range(len(choices))}
+        for key, value in choice_dict.items():
+            prompt += f"{key}) {value}\n"
     except Exception as error:
         import traceback
+
         tb = traceback.extract_tb(sys.exc_info()[2], limit=1)[0]
-        raise QuestionExceptions(f"{tb} : {str(error)}")
+        raise QuestionError(f"{tb} : {str(error)}") from error
 
     # Wait for the user input
     while True:
-        answer = None
-        user_input = input(qstring)
-        if user_input in qdict.keys():
-            answer = qdict[user_input]
-            return answer
+        user_input = input(prompt)
+        if user_input in choice_dict:
+            return choice_dict[user_input]
         else:
             print(f"\n{user_input} is not a choice.....please choose again\n")
-            continue 
-
-def ask_text_input(qstring:str):
-    answer = None
-    question = qstring + "? "
-    answer = input(question)
-    return answer.replace(" ", "_").lower()
+            continue
