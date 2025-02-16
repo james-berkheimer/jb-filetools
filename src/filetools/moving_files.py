@@ -9,48 +9,39 @@
 
 import os
 import shutil
-import traceback
 from pathlib import Path
 
-from .constants import (
-    DO_NOT_DELETE,
-    FILE_EXCLUDES,
-    FILE_IGNORES,
-    FILES_TO_DELETE,
-    LIBRARIES,
-    MOVIE_LIBRARIES,
-    PROJECT_ROOT,
-    SHOW_LIBRARIES,
-    VIDEO_FILE_EXTENSIONS,
-)
+from . import CONFIG
 from .logging import setup_logger
 from .questions import ask_bool, ask_multichoice, ask_text_input
-from .utils import (
-    dir_scan,
-    get_season_episode,
-    get_show_map,
-    make_shows_map,
-    match_for_tv,
-    unique,
-)
+from .utils import dir_scan, get_season_episode, get_show_map, make_shows_map
 
 log = setup_logger(__name__)
 
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
+DO_NOT_DELETE = CONFIG.do_not_delete
+FILE_EXCLUDES = CONFIG.file_excludes
+FILE_IGNORES = CONFIG.file_ignores
+FILES_TO_DELETE = CONFIG.files_to_delete
+VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
+
+MOVIE_LIBRARIES = CONFIG.movies
+SHOW_LIBRARIES = CONFIG.shows
+MUSIC_LIBRARIES = CONFIG.music
 
 # --------------------------------------------------------------------------------
 # Public Functions
 # --------------------------------------------------------------------------------
 
 
-def clean_empty_dirs(root_dir: Path):
+def clean_empty_dirs(working_directory: Path):
     """
     Recursively finds and deletes empty directories within the specified root directory.
 
     Args:
-        root_dir (Path): The root directory to search for empty directories.
+        working_directory (Path): The root directory to search for empty directories.
 
     Logs:
         - Lists all empty directories found.
@@ -60,7 +51,7 @@ def clean_empty_dirs(root_dir: Path):
     Raises:
         OSError: If an error occurs while attempting to delete a directory.
     """
-    dirs_to_delete = get_empty_dirs(root_dir)
+    dirs_to_delete = _get_empty_dirs(working_directory)
 
     if dirs_to_delete:
         log.info("Empty directories found:")
@@ -78,27 +69,27 @@ def clean_empty_dirs(root_dir: Path):
         log.info("No directories to delete")
 
 
-def extract_from_src(root_dir: Path):
+def extract_from_src(working_directory: Path):
     """
     Extracts files from the source directory to their new locations.
 
     This function retrieves a list of files to be moved from the source directory
-    specified by `root_dir` and moves each file to its new location. It logs the
+    specified by `working_directory` and moves each file to its new location. It logs the
     progress of the extraction process, including any errors encountered during
     the file moves.
 
     Args:
-        root_dir (Path): The root directory containing the files to be extracted.
+        working_directory (Path): The root directory containing the files to be extracted.
 
     Raises:
         Exception: If an error occurs while moving a file, it is logged but not re-raised.
     """
-    files_to_extract = get_files_to_extract(root_dir)
+    files_to_extract = _get_files_to_extract(working_directory)
 
     log.info("----------- Starting file extraction process -----------")
     for old_path, new_path in files_to_extract.items():
         try:
-            log.info(f"Extracting {old_path} to {new_path}")
+            log.info(f"Ex_get_files_to_extracttracting {old_path} to {new_path}")
             shutil.move(old_path, new_path)
         except Exception as e:
             log.error(f"Failed to move {old_path} to {new_path}: {e}")
@@ -106,16 +97,179 @@ def extract_from_src(root_dir: Path):
     log.info("File extraction process completed")
 
 
-def move_to_libraries(root_dir: Path):
-    movies, shows = _sort_media(dir_scan(root_dir, True))
-    move_movie_files(movies, root_dir)
-    move_show_files(shows, root_dir)
+def move_movie_files(movies: list[str], working_directory: Path):
+    """
+    Moves movie files from the working directory to their respective destinations.
+
+    This function takes a list of movie filenames and a working directory path,
+    then moves each movie file to its designated destination. If the destination
+    directory does not exist, it will be created.
+
+    Args:
+        movies (list[str]): A list of movie filenames to be moved.
+        working_directory (Path): The path to the working directory where the
+                                  movie files are currently located.
+
+    Raises:
+        FileNotFoundError: If any of the movie files do not exist in the working directory.
+        OSError: If there is an error creating directories or moving files.
+    """
+    files_to_move = {}
+    directories_to_create = []
+
+    for movie in movies:
+        src = working_directory.joinpath(movie)
+        dest = _build_movie_destination(movie)
+        if dest:
+            if not dest.parent.exists():
+                directories_to_create.append(dest.parent)
+            files_to_move[src] = dest
+
+    _create_missing_directories(directories_to_create)
+    _perform_moves(files_to_move)
+
+
+def move_show_files(shows: list[str], working_directory: Path):
+    """
+    Moves show files to their respective destination directories.
+
+    Args:
+        shows (list[str]): A list of show filenames to be moved.
+        working_directory (Path): The directory where the show files are currently located.
+
+    The function processes each show filename, determines its destination path,
+    creates any necessary directories, and then moves the files to their new locations.
+    """
+    files_to_move = {}
+    directories_to_create = []
+
+    for show_filename in shows:
+        src = working_directory.joinpath(show_filename)
+        dest = _build_show_destination(show_filename)
+        if dest:
+            if not dest.parent.exists():
+                directories_to_create.append(dest.parent)
+            files_to_move[src] = dest
+
+    _create_missing_directories(directories_to_create)
+    _perform_moves(files_to_move)
 
 
 # --------------------------------------------------------------------------------
 # Private Functions
 # --------------------------------------------------------------------------------
-def get_empty_dirs(root_dir: Path):
+
+
+def _build_movie_destination(movie_name: str) -> Path | None:
+    """
+    Builds the destination path for a movie file within a selected movie library.
+
+    Args:
+        movie_name (str): The name of the movie file.
+
+    Returns:
+        Path | None: The destination path for the movie file within the selected library,
+                     or None if no valid library is selected or found.
+    """
+    library_path = _choose_library(MOVIE_LIBRARIES, "Select a movie library:")
+    if not library_path:
+        log.warning("No valid movie library selected or found.")
+        return None
+
+    filename_wo_ext, _ = os.path.splitext(movie_name)
+    filename_wo_ext = filename_wo_ext.replace("-4k-hdr", "")
+    return Path(library_path).joinpath(filename_wo_ext, movie_name)
+
+
+def _build_show_destination(show_name: str) -> Path | None:
+    """
+    Constructs the destination path for a given show name.
+
+    This function attempts to parse the season and episode information from the
+    provided show name. If successful, it constructs a destination path based on
+    a predefined mapping of shows. If the show is not found in the mapping, it
+    prompts the user to provide a new show path.
+
+    Args:
+        show_name (str): The name of the show, including season and episode information.
+
+    Returns:
+        Path | None: The constructed destination path for the show, or None if the
+        season/episode information could not be parsed.
+    """
+    season_episode, _ = get_season_episode(show_name)
+    if not season_episode:
+        log.warning(f"Could not parse season/episode from {show_name}")
+        return None
+
+    base_show_name = show_name.split(season_episode[0])[0].rstrip("_")
+    season_name = _split_season_episode(season_episode)[0].replace("s", "season_")
+    if season_name == "season_00":
+        season_name = "specials"
+
+    try:
+        # 1. Check shows_map.ini
+        show_map = get_show_map()
+        matched_path = Path(show_map["Shows"][base_show_name])
+        return matched_path.joinpath(season_name, show_name)
+
+    except KeyError:
+        # 2. If show not found, prompt user
+        return _prompt_for_new_show(base_show_name, season_name, show_name)
+
+
+def _choose_library(library_dict: dict[str, str], prompt: str) -> str | None:
+    """
+    Selects a library from a dictionary of library names and their corresponding paths.
+
+    Args:
+        library_dict (dict[str, str]): A dictionary where keys are library names and values are their paths.
+        prompt (str): A prompt message to display when asking the user to choose a library.
+
+    Returns:
+        str | None: The path of the selected library, or None if the dictionary is empty.
+    """
+    if not library_dict:
+        return None
+
+    library_names = list(library_dict.keys())
+    if len(library_names) > 1:
+        choice = ask_multichoice(library_names, prompt)
+        return library_dict[choice]
+    else:
+        return library_dict[library_names[0]]
+
+
+def _create_missing_directories(dir_list: list[Path]):
+    """
+    Create missing directories from a list of directory paths.
+
+    This function takes a list of directory paths, removes duplicates, and prompts the user
+    to confirm if they want to create the missing directories. If the user confirms, it creates
+    the directories that do not already exist.
+
+    Args:
+        dir_list (list[Path]): A list of directory paths to be created if missing.
+
+    Returns:
+        None
+    """
+    unique_dirs = list(set(dir_list))
+    if not unique_dirs:
+        return
+
+    print("Directories to create:")
+    for d in unique_dirs:
+        print(f"   {d}")
+
+    if ask_bool("Do you want to create these directories?"):
+        for d in unique_dirs:
+            if not d.exists():
+                log.info(f"Creating directory: {d}")
+                os.makedirs(d, exist_ok=True)
+
+
+def _get_empty_dirs(working_directory: Path):
     """
     Identify empty directories within a given root directory.
 
@@ -126,13 +280,13 @@ def get_empty_dirs(root_dir: Path):
     or trailers.
 
     Args:
-        root_dir (Path): The root directory to scan for empty directories.
+        working_directory (Path): The root directory to scan for empty directories.
 
     Returns:
         list: A list of Path objects representing directories that can be deleted.
     """
     dirs_to_delete = []
-    for dir_obj in dir_scan(root_dir):
+    for dir_obj in dir_scan(working_directory):
         delete = True
         for file_obj in dir_scan(dir_obj.path, True):
             _, file_ext = os.path.splitext(file_obj.name)
@@ -145,11 +299,11 @@ def get_empty_dirs(root_dir: Path):
                 else:
                     delete = False
         if delete:
-            dirs_to_delete.append(root_dir.joinpath(dir_obj.name))
+            dirs_to_delete.append(working_directory.joinpath(dir_obj.name))
     return dirs_to_delete
 
 
-def get_files_to_extract(root_dir: Path):
+def _get_files_to_extract(working_directory: Path):
     """
     Scans the given root directory and identifies files to be extracted.
 
@@ -158,7 +312,7 @@ def get_files_to_extract(root_dir: Path):
     that should not be processed and handles files that are still downloading.
 
     Args:
-        root_dir (Path): The root directory to scan for files to extract.
+        working_directory (Path): The root directory to scan for files to extract.
 
     Returns:
         dict: A dictionary where the keys are the original file paths and the
@@ -170,7 +324,7 @@ def get_files_to_extract(root_dir: Path):
     files_to_extract = {}
 
     try:
-        for dir_obj in dir_scan(root_dir):
+        for dir_obj in dir_scan(working_directory):
             if _should_skip_directory(dir_obj):
                 continue
 
@@ -178,7 +332,7 @@ def get_files_to_extract(root_dir: Path):
             still_downloading = False
 
             for file_obj in dir_scan(dir_obj.path, True):
-                new_path, downloading = _process_file(file_obj, root_dir)
+                new_path, downloading = _process_file(file_obj, working_directory)
                 if downloading:
                     still_downloading = True
                     break
@@ -193,140 +347,104 @@ def get_files_to_extract(root_dir: Path):
     return files_to_extract
 
 
-def move_movie_files(movies: list, root_dir: Path):
+def _perform_moves(files_to_move: dict[Path, Path]):
     """
-    Moves movie files from the root directory to the appropriate movie library.
+    Moves files from source to destination as specified in the files_to_move dictionary.
 
     Args:
-        movies (list): List of movie filenames to be moved.
-        root_dir (Path): The root directory where the movie files are currently located.
+        files_to_move (dict[Path, Path]): A dictionary where keys are source file paths and values are destination file paths.
 
-    The function determines the target path for each movie based on the MOVIE_LIBRARIES
-    dictionary. If there are multiple libraries, the user is prompted to choose one.
-    It then creates the necessary directories and moves the movie files to the target path.
-    If a movie file already exists at the target location, it logs that the movie is already
-    in the server.
+    Returns:
+        None
+
+    The function first prints the list of files to be moved. It then prompts the user for confirmation to proceed with the move.
+    If the user confirms, it creates the necessary directories at the destination if they do not exist, and moves the files.
+    If a file already exists at the destination, it logs a message and skips moving that file. If an error occurs during the move,
+    it logs an error message.
     """
-    for movie in movies:
-        libraries = list(MOVIE_LIBRARIES.keys())
-        if len(libraries) > 1:
-            choice = ask_multichoice(libraries)
-            target_path = MOVIE_LIBRARIES[choice]
-        else:
-            target_path = MOVIE_LIBRARIES[libraries[0]]
+    if not files_to_move:
+        return
 
-        filename_wo_ext, _ = os.path.splitext(movie)
-        filename_wo_ext = filename_wo_ext.replace("-4k-hdr", "")
-        new_movie_path = target_path.joinpath(filename_wo_ext)
-        src = root_dir.joinpath(movie)
-        dst = new_movie_path.joinpath(movie)
+    print("\nThe following files will be moved:")
+    for src, dest in files_to_move.items():
+        print(f"{src} -> {dest}")
 
-        try:
-            new_movie_path.mkdir(parents=True, exist_ok=True)
-            if not dst.is_file():
-                log.info(f"Moving: {src} to {dst}")
-                shutil.move(src, dst)
+    if ask_bool("Do you want to move these files?"):
+        for src, dest in files_to_move.items():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists():
+                log.info(f"File already exists: {dest}, skipping...")
             else:
-                log.info(f"Movie already in server: {movie}")
-        except Exception as e:
-            log.error(f"Failed to move {src} to {dst}: {e}")
-
-
-def move_show_files(shows: list, root_dir: Path):
-    move_dict = {}
-    make_dirs = []
-    skip = []
-    for show in shows:
-        season_episode = get_season_episode(show)
-        show_name = show.split(season_episode[0])[0].rstrip("_")
-        season = _split_season_episode(season_episode)[0].replace("s", "season_")
-        if season == "season_00":
-            season = "specials"
-        src = root_dir.joinpath(show)
-        try:
-            # first match.  Check if show is in show_map
-            show_map = get_show_map()
-            matched_path = Path(show_map["Shows"][show_name])
-            season_path = matched_path.joinpath(season)
-            # Second match.  Check if season exists
-            if season_path.exists() is False:
-                make_dirs.append(season_path)
-            move_dict[src] = season_path.joinpath(show)
-        except KeyError:
-            # If show is not in show_map, we will make a new show directory
-            if show_name not in skip:
-                print(f"{show_name} does not exist")
-                if ask_bool(f"Do you want to add {show_name}?"):
-                    if ask_multichoice(["Television", "Documentary"]) == "Television":
-                        show_type_path = TELEVISION_PATH
-                    else:
-                        show_type_path = DOCUMENTARIES_PATH
-                    show_network = ask_text_input("Please enter the network the show is on")
-                    new_show_path = show_type_path.joinpath(show_network, show_name, season)
-                    # Making a new show directory.  This is for when we have multiple episodes
-                    # for a new show to add.  This will prevent having to ask this question
-                    # for each episode.
-                    os.makedirs(new_show_path)
-                    # create new show_map to include newly created show
-                    make_shows_map()
-                    move_dict[src] = new_show_path.joinpath(show)
-                else:
-                    skip.append(show_name)
-    if make_dirs:
-        # Make dirs that don't exist
-        make_dirs = unique(make_dirs)
-        print("Directories to make:")
-        for mdir in make_dirs:
-            print(f"   {mdir}")
-        if ask_bool("Do you want to make directories?"):
-            for mdir in make_dirs:
-                print(f"Making....{mdir}")
-                os.makedirs(mdir)
-    print("\n")
-    if move_dict:
-        # Let's move these files
-        for _, dest in move_dict.items():
-            print(dest)
-        if ask_bool("Do you want to move files?"):
-            for src, dest in move_dict.items():
-                if os.path.isfile(dest):
-                    print(f"file exists....{dest}")
-                    pass
-                else:
-                    print(f"moving....{dest}")
+                try:
+                    log.info(f"Moving: {src} -> {dest}")
                     shutil.move(src, dest)
+                except Exception as e:
+                    log.error(f"Failed to move {src} to {dest}: {e}")
 
 
-def _process_file(file_obj, root_dir):
+def _process_file(file_obj, working_directory):
+    """
+    Processes a file object to determine its new path based on its extension.
+
+    Args:
+        file_obj (File): The file object to be processed.
+        working_directory (Path): The directory where the file should be moved if applicable.
+
+    Returns:
+        tuple: A tuple containing the new file path (or None if not moved) and a boolean indicating
+               whether the file should not be deleted (True) or can be deleted (False).
+    """
     _, file_ext = os.path.splitext(file_obj.name)
     if file_ext in DO_NOT_DELETE:
         return None, True
     if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
         if file_obj.name.lower() in FILE_IGNORES:
             return None, False
-        return root_dir.joinpath(file_obj.name), False
+        return working_directory.joinpath(file_obj.name), False
     return None, False
 
 
-def _sort_media(files_obj):
-    movies = []
-    shows = []
-    for file_obj in files_obj:
-        if any(x in file_obj.name for x in FILES_TO_DELETE):
-            print(f"deleting: {file_obj.name}")
-            os.remove(file_obj.path)
-        elif any(x in file_obj.name for x in FILE_EXCLUDES):
-            pass
-        else:
-            match = match_for_tv(file_obj.name)
-            if match:
-                shows.append(file_obj.name)
-            else:
-                movies.append(file_obj.name)
-    return movies, shows
+def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Path | None:
+    """
+    If the show isn't in shows_map.ini, asks user whether to add it.
+    Prompts for library type (Television/Documentaries), network, etc.
+    Returns the newly created path or None if user declines.
+    """
+    print(f"Show '{show_name}' does not exist in the shows_map.ini.")
+    if not ask_bool(f"Do you want to add '{show_name}'?"):
+        return None
+
+    # Prompt user for which library to use (this example is simplified)
+    choice = ask_multichoice(["Television", "Documentaries"])
+    if choice in SHOW_LIBRARIES:
+        base_library_path = Path(SHOW_LIBRARIES[choice])
+    else:
+        # Fallback if not found in SHOW_LIBRARIES
+        log.warning(f"{choice} not found in SHOW_LIBRARIES, defaulting to /media/Television.")
+        base_library_path = Path("/media/Television")
+
+    show_network = ask_text_input("Please enter the network the show is on (e.g., 'HBO', 'BBC'):")
+
+    new_show_dir = base_library_path.joinpath(show_network, show_name, season_name)
+    os.makedirs(new_show_dir, exist_ok=True)
+
+    # Add to shows_map.ini
+    make_shows_map()
+
+    return new_show_dir.joinpath(filename)
 
 
 def _split_season_episode(season_episode):
+    """
+    Splits a season and episode string into separate components.
+
+    Args:
+        season_episode (list): A list containing a single string in the format "SxxExx",
+                               where "Sxx" represents the season and "Exx" represents the episode.
+
+    Returns:
+        tuple: A tuple containing the season as a string and the episode as a string.
+    """
     split = season_episode[0].split("e")
     season = split[0]
     episode = f"e{split[1]}"
@@ -334,4 +452,13 @@ def _split_season_episode(season_episode):
 
 
 def _should_skip_directory(dir_obj):
+    """
+    Determines whether a directory should be skipped based on its name.
+
+    Args:
+        dir_obj (object): An object representing a directory, which must have a 'name' attribute.
+
+    Returns:
+        bool: True if the directory's name is "_in-progress", indicating it should be skipped; False otherwise.
+    """
     return dir_obj.name == "_in-progress"

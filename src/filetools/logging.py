@@ -2,6 +2,19 @@ import logging
 
 import colorlog
 
+# Define a new log level for user interaction (Questions)
+QUESTION = 25
+logging.addLevelName(QUESTION, "QUESTION")
+
+
+def question(self, message, *args, **kwargs):
+    """Custom log method for handling user questions."""
+    if self.isEnabledFor(QUESTION):
+        self._log(QUESTION, message, args, **kwargs)
+
+
+logging.Logger.question = question  # Add to logger class
+
 
 def setup_logger(name=None, level=logging.INFO):
     """Return a logger with a default ColoredFormatter."""
@@ -12,6 +25,7 @@ def setup_logger(name=None, level=logging.INFO):
         log_colors={
             "DEBUG": "cyan",
             "INFO": "green",
+            "QUESTION": "blue",  # Custom color for questions
             "WARNING": "yellow",
             "ERROR": "red",
             "CRITICAL": "red,bg_white",

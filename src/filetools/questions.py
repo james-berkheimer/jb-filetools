@@ -1,62 +1,78 @@
-# --------------------------------------------------------------------------------
-# Imports
-# --------------------------------------------------------------------------------
-import re
-import sys
-from typing import Any, Dict, List
+from typing import Dict, List, Optional
+
+from .logging import setup_logger
+
+log = setup_logger(__name__)  # Standardized logger
 
 
-# --------------------------------------------------------------------------------
-# Globals
-# --------------------------------------------------------------------------------
 class QuestionError(Exception):
-    pass
+    """Raised when there is an error processing a user question."""
+
+    def __init__(self, message: str, question: Optional[str] = None, details: Optional[str] = None):
+        super().__init__(message)
+        self.question = question
+        self.details = details
+        log.error(f"QuestionError: {message} | Question: {question} | Details: {details}")
+
+    def __str__(self):
+        return f"QuestionError: {self.args[0]} | Question: {self.question} | Details: {self.details}"
 
 
-# --------------------------------------------------------------------------------
-# Public API
-# --------------------------------------------------------------------------------
+def ask_bool(question: str, default_value: Optional[bool] = None) -> Optional[bool]:
+    """
+    Prompts the user with a yes/no question.
 
+    Args:
+        question (str): The question to ask.
+        default_value (Optional[bool]): The default answer if the user presses Enter.
 
-def ask_bool(question: str, default_value: Any = None) -> Any:
-    answer = None
-    prompt = question + " [y/n]? "
+    Returns:
+        Optional[bool]: True for 'yes', False for 'no', or the default_value.
+    """
+    prompt = f"{question} [y/n]? "
+
     while True:
-        print("")
-        user_input = input(prompt)
-        if re.match("y", user_input, re.IGNORECASE):
-            answer = True
-            break
-        elif re.match("n", user_input, re.IGNORECASE):
-            answer = False
-            break
-        elif not user_input.strip() and default_value is not None:
-            answer = default_value
-            break
-        else:
-            continue
-    return answer
+        log.question(prompt)
+        user_input = input(prompt).strip().lower()
+
+        if user_input in {"y", "yes"}:
+            return True
+        if user_input in {"n", "no"}:
+            return False
+        if user_input == "" and default_value is not None:
+            return default_value
+
+        log.warning(f"Invalid input: {user_input}. Expected 'y' or 'n'.")
 
 
 def ask_multichoice(choices: List[str]) -> str:
-    prompt = ""
-    choice_dict: Dict[str, str] = {}
-    # Let's form the question to present to the user
-    try:
-        choice_dict = {str(i + 1): choices[i] for i in range(len(choices))}
-        for key, value in choice_dict.items():
-            prompt += f"{key}) {value}\n"
-    except Exception as error:
-        import traceback
+    """
+    Prompts the user to choose from a list of options.
 
-        tb = traceback.extract_tb(sys.exc_info()[2], limit=1)[0]
-        raise QuestionError(f"{tb} : {str(error)}") from error
+    Args:
+        choices (List[str]): A list of string choices.
 
-    # Wait for the user input
+    Returns:
+        str: The chosen option.
+
+    Raises:
+        QuestionError: If no choices are provided.
+    """
+    if not choices:
+        raise QuestionError("No choices provided for ask_multichoice().")
+
+    choice_dict: Dict[str, str] = {str(i + 1): choice for i, choice in enumerate(choices)}
+
+    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")
+    for key, value in choice_dict.items():
+        print(f"{key}) {value}")
+
     while True:
-        user_input = input(prompt)
+        user_input = input("\nEnter the number of your choice: ").strip()
+
         if user_input in choice_dict:
+            log.info(f"User selected choice {user_input}: {choice_dict[user_input]}")
             return choice_dict[user_input]
-        else:
-            print(f"\n{user_input} is not a choice.....please choose again\n")
-            continue
+
+        log.warning(f"Invalid choice: {user_input}. Expected one of {list(choice_dict.keys())}.")
+        print(f"Invalid choice: {user_input}. Please enter a valid number from the list.")

@@ -14,10 +14,10 @@ from pathlib import Path
 
 import click
 
-from . import naming_files, utils
-from .constants import CURRENT_WORKING_DIR
+from . import naming_files
 from .logging import setup_logger
-from .moving_files import clean_empty_dirs, extract_from_src, move_to_libraries
+from .moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
+from .utils import dir_scan, make_shows_map, sort_media
 
 
 # --------------------------------------------------------------------------------
@@ -57,9 +57,9 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_na
     logger.info("Python version: %s", sys.version)
 
     # make/Update show_map
-    utils.make_shows_map()
+    make_shows_map()
 
-    work_dir = Path(path) if path else CURRENT_WORKING_DIR
+    work_dir = Path(path) if path else Path.cwd()
     logger.info("Path to work on: %s", work_dir)
 
     if extract_files:
@@ -74,7 +74,9 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_na
 
     if move_files:
         logger.info("----------- move_to_libraries -----------")
-        move_to_libraries(work_dir)
+        movies, shows = sort_media(dir_scan(work_dir, True))
+        move_movie_files(movies, work_dir)
+        move_show_files(shows, work_dir)
         logger.info("\n")
 
     if delete_empty_dirs:
