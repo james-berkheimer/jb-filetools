@@ -9,7 +9,7 @@
 import os
 import traceback
 
-from . import constants, utils
+from .. import constants, utils
 
 # --------------------------------------------------------------------------------
 # Globals

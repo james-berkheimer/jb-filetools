@@ -1,8 +1,7 @@
+import logging
 from typing import Dict, List, Optional
 
-from .logging import setup_logger
-
-log = setup_logger(__name__)  # Standardized logger
+log = logging.getLogger("filetools")
 
 
 class QuestionError(Exception):
@@ -20,7 +19,7 @@ class QuestionError(Exception):
 
 def ask_bool(question: str, default_value: Optional[bool] = None) -> Optional[bool]:
     """
-    Prompts the user with a yes/no question.
+    Prompts the user with a yes/no question using logging formatting.
 
     Args:
         question (str): The question to ask.
@@ -32,8 +31,8 @@ def ask_bool(question: str, default_value: Optional[bool] = None) -> Optional[bo
     prompt = f"{question} [y/n]? "
 
     while True:
-        log.question(prompt)
-        user_input = input(prompt).strip().lower()
+        log.question(prompt)  # Logs the prompt in QUESTION (green)
+        user_input = input("|| ").strip().lower()  # Keeps "|| " formatting
 
         if user_input in {"y", "yes"}:
             return True
@@ -47,7 +46,7 @@ def ask_bool(question: str, default_value: Optional[bool] = None) -> Optional[bo
 
 def ask_multichoice(choices: List[str]) -> str:
     """
-    Prompts the user to choose from a list of options.
+    Prompts the user to choose from a list of options using logging formatting.
 
     Args:
         choices (List[str]): A list of string choices.
@@ -63,12 +62,12 @@ def ask_multichoice(choices: List[str]) -> str:
 
     choice_dict: Dict[str, str] = {str(i + 1): choice for i, choice in enumerate(choices)}
 
-    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")
+    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")  # Logs prompt in green
     for key, value in choice_dict.items():
-        print(f"{key}) {value}")
+        print(f"{key}) {value}")  # Keep menu choices visible
 
     while True:
-        user_input = input("\nEnter the number of your choice: ").strip()
+        user_input = input("\n|| ").strip()  # Keeps "|| " input formatting
 
         if user_input in choice_dict:
             log.info(f"User selected choice {user_input}: {choice_dict[user_input]}")
@@ -76,3 +75,10 @@ def ask_multichoice(choices: List[str]) -> str:
 
         log.warning(f"Invalid choice: {user_input}. Expected one of {list(choice_dict.keys())}.")
         print(f"Invalid choice: {user_input}. Please enter a valid number from the list.")
+
+
+def ask_text_input(qstring: str):
+    answer = None
+    question = qstring + "? "
+    answer = input(question)
+    return answer.replace(" ", "_").lower()

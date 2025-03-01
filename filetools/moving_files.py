@@ -6,17 +6,18 @@
 # --------------------------------------------------------------------------------
 # Imports
 # --------------------------------------------------------------------------------
-
+import errno
+import logging
 import os
 import shutil
 from pathlib import Path
+from typing import List
 
 from . import CONFIG
-from .logging import setup_logger
 from .questions import ask_bool, ask_multichoice, ask_text_input
-from .utils import dir_scan, get_season_episode, get_show_map, make_shows_map
+from .utils import dir_scan, get_show_map, make_shows_map, parse_filename
 
-log = setup_logger(__name__)
+log = logging.getLogger("filetools")
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -86,10 +87,9 @@ def extract_from_src(working_directory: Path):
     """
     files_to_extract = _get_files_to_extract(working_directory)
 
-    log.info("----------- Starting file extraction process -----------")
     for old_path, new_path in files_to_extract.items():
         try:
-            log.info(f"Ex_get_files_to_extracttracting {old_path} to {new_path}")
+            log.info(f"Extracting......{old_path}")
             shutil.move(old_path, new_path)
         except Exception as e:
             log.error(f"Failed to move {old_path} to {new_path}: {e}")
@@ -97,16 +97,16 @@ def extract_from_src(working_directory: Path):
     log.info("File extraction process completed")
 
 
-def move_movie_files(movies: list[str], working_directory: Path):
+def move_movie_files(movies: List[Path], working_directory: Path):
     """
     Moves movie files from the working directory to their respective destinations.
 
-    This function takes a list of movie filenames and a working directory path,
+    This function takes a list of movie file paths and a working directory path,
     then moves each movie file to its designated destination. If the destination
     directory does not exist, it will be created.
 
     Args:
-        movies (list[str]): A list of movie filenames to be moved.
+        movies (List[Path]): A list of movie file paths to be moved.
         working_directory (Path): The path to the working directory where the
                                   movie files are currently located.
 
@@ -115,44 +115,36 @@ def move_movie_files(movies: list[str], working_directory: Path):
         OSError: If there is an error creating directories or moving files.
     """
     files_to_move = {}
-    directories_to_create = []
 
     for movie in movies:
-        src = working_directory.joinpath(movie)
+        src = working_directory.joinpath(movie.name)
         dest = _build_movie_destination(movie)
         if dest:
-            if not dest.parent.exists():
-                directories_to_create.append(dest.parent)
             files_to_move[src] = dest
 
-    _create_missing_directories(directories_to_create)
-    _perform_moves(files_to_move)
+    _perform_moves(files_to_move, "movies")
 
 
-def move_show_files(shows: list[str], working_directory: Path):
+def move_show_files(shows: List[Path], working_directory: Path):
     """
     Moves show files to their respective destination directories.
 
     Args:
-        shows (list[str]): A list of show filenames to be moved.
+        shows (List[Path]): A list of show file paths to be moved.
         working_directory (Path): The directory where the show files are currently located.
 
-    The function processes each show filename, determines its destination path,
+    The function processes each show file path, determines its destination path,
     creates any necessary directories, and then moves the files to their new locations.
     """
     files_to_move = {}
-    directories_to_create = []
 
-    for show_filename in shows:
-        src = working_directory.joinpath(show_filename)
-        dest = _build_show_destination(show_filename)
+    for show in shows:
+        src = working_directory.joinpath(show)
+        dest = _build_show_destination(show)
         if dest:
-            if not dest.parent.exists():
-                directories_to_create.append(dest.parent)
             files_to_move[src] = dest
 
-    _create_missing_directories(directories_to_create)
-    _perform_moves(files_to_move)
+    _perform_moves(files_to_move, "shows")
 
 
 # --------------------------------------------------------------------------------
@@ -160,7 +152,7 @@ def move_show_files(shows: list[str], working_directory: Path):
 # --------------------------------------------------------------------------------
 
 
-def _build_movie_destination(movie_name: str) -> Path | None:
+def _build_movie_destination(movie_path: Path) -> Path | None:
     """
     Builds the destination path for a movie file within a selected movie library.
 
@@ -171,17 +163,21 @@ def _build_movie_destination(movie_name: str) -> Path | None:
         Path | None: The destination path for the movie file within the selected library,
                      or None if no valid library is selected or found.
     """
+    log.debug(f"Processing movie: {movie_path}")
     library_path = _choose_library(MOVIE_LIBRARIES, "Select a movie library:")
+    filename_without_extension = movie_path.stem
+    cleaned_filename = filename_without_extension.replace("-4K", "").replace("-hdr", "")
+    log.debug(f"Using library: {library_path}")
     if not library_path:
         log.warning("No valid movie library selected or found.")
         return None
 
-    filename_wo_ext, _ = os.path.splitext(movie_name)
-    filename_wo_ext = filename_wo_ext.replace("-4k-hdr", "")
-    return Path(library_path).joinpath(filename_wo_ext, movie_name)
+    destination = library_path / cleaned_filename / movie_path.name
+    log.debug(f"Destination: {destination}")
+    return Path(destination)
 
 
-def _build_show_destination(show_name: str) -> Path | None:
+def _build_show_destination(show_path: Path) -> Path | None:
     """
     Constructs the destination path for a given show name.
 
@@ -197,28 +193,32 @@ def _build_show_destination(show_name: str) -> Path | None:
         Path | None: The constructed destination path for the show, or None if the
         season/episode information could not be parsed.
     """
-    season_episode, _ = get_season_episode(show_name)
+    log.info(f"Processing show: {show_path}")
+    show_name, season_episode = parse_filename(show_path.name)
+    log.debug(f"Show name: {show_name} | Season/Episode: {season_episode}")
     if not season_episode:
         log.warning(f"Could not parse season/episode from {show_name}")
         return None
 
-    base_show_name = show_name.split(season_episode[0])[0].rstrip("_")
+    base_show_name = show_name.split(season_episode)[0].rstrip("_").lstrip("_")
     season_name = _split_season_episode(season_episode)[0].replace("s", "season_")
     if season_name == "season_00":
         season_name = "specials"
 
+    log.debug(f"Base show name: {base_show_name} | Season name: {season_name}")
+
     try:
-        # 1. Check shows_map.ini
         show_map = get_show_map()
         matched_path = Path(show_map["Shows"][base_show_name])
-        return matched_path.joinpath(season_name, show_name)
+        destination = matched_path / season_name / show_path.name
+        log.debug(f"destination: {destination}")
+        return destination
 
     except KeyError:
-        # 2. If show not found, prompt user
-        return _prompt_for_new_show(base_show_name, season_name, show_name)
+        return _prompt_for_new_show(base_show_name, season_name, show_path.name)
 
 
-def _choose_library(library_dict: dict[str, str], prompt: str) -> str | None:
+def _choose_library(library_dict: dict[str, str], prompt: str) -> Path | None:
     """
     Selects a library from a dictionary of library names and their corresponding paths.
 
@@ -227,7 +227,7 @@ def _choose_library(library_dict: dict[str, str], prompt: str) -> str | None:
         prompt (str): A prompt message to display when asking the user to choose a library.
 
     Returns:
-        str | None: The path of the selected library, or None if the dictionary is empty.
+        Path | None: The path of the selected library as a Path object, or None if the dictionary is empty.
     """
     if not library_dict:
         return None
@@ -235,38 +235,9 @@ def _choose_library(library_dict: dict[str, str], prompt: str) -> str | None:
     library_names = list(library_dict.keys())
     if len(library_names) > 1:
         choice = ask_multichoice(library_names, prompt)
-        return library_dict[choice]
+        return Path(library_dict[choice])
     else:
-        return library_dict[library_names[0]]
-
-
-def _create_missing_directories(dir_list: list[Path]):
-    """
-    Create missing directories from a list of directory paths.
-
-    This function takes a list of directory paths, removes duplicates, and prompts the user
-    to confirm if they want to create the missing directories. If the user confirms, it creates
-    the directories that do not already exist.
-
-    Args:
-        dir_list (list[Path]): A list of directory paths to be created if missing.
-
-    Returns:
-        None
-    """
-    unique_dirs = list(set(dir_list))
-    if not unique_dirs:
-        return
-
-    print("Directories to create:")
-    for d in unique_dirs:
-        print(f"   {d}")
-
-    if ask_bool("Do you want to create these directories?"):
-        for d in unique_dirs:
-            if not d.exists():
-                log.info(f"Creating directory: {d}")
-                os.makedirs(d, exist_ok=True)
+        return Path(library_dict[library_names[0]])
 
 
 def _get_empty_dirs(working_directory: Path):
@@ -347,7 +318,48 @@ def _get_files_to_extract(working_directory: Path):
     return files_to_extract
 
 
-def _perform_moves(files_to_move: dict[Path, Path]):
+def _move_file(src: Path, dest: Path):
+    """
+    Move a file reliably across any filesystem in a Linux-based Docker container.
+    - Uses os.rename() if possible (fastest).
+    - Falls back to sendfile() (zero-copy, Linux-only).
+    - Uses shutil.copyfile() + unlink() as a last resort.
+
+    Args:
+        src (Path): The source file path.
+        dest (Path): The destination file path.
+    """
+    # Try os.rename() first (fastest if on the same filesystem)
+    try:
+        os.rename(src, dest)
+        log.info(f"Moved {src} -> {dest} using os.rename()")
+        return
+    except OSError as e:
+        if e.errno != errno.EXDEV:  # EXDEV means "cross-device link not permitted"
+            log.error(f"Failed to move {src} -> {dest} using os.rename(): {e}")
+            raise  # Re-raise other errors
+
+    # If os.rename() fails due to cross-filesystem move, try sendfile()
+    try:
+        with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
+            os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
+        os.unlink(src)  # Remove source after copy
+        log.info(f"Moved {src} -> {dest} using sendfile()")
+        return
+    except OSError as e:
+        log.error(f"Failed to move {src} -> {dest} using sendfile(): {e}")
+
+    # Final fallback: Use shutil.copyfile() and remove source manually
+    try:
+        shutil.copyfile(src, dest)
+        os.unlink(src)  # Remove source after copying
+        log.info(f"Moved {src} -> {dest} using shutil.copyfile() + unlink()")
+    except OSError as e:
+        log.error(f"Failed to move {src} -> {dest} using shutil.copyfile() + unlink(): {e}")
+        raise
+
+
+def _perform_moves(files_to_move: dict[Path, Path], media_type: str):
     """
     Moves files from source to destination as specified in the files_to_move dictionary.
 
@@ -365,19 +377,21 @@ def _perform_moves(files_to_move: dict[Path, Path]):
     if not files_to_move:
         return
 
-    print("\nThe following files will be moved:")
-    for src, dest in files_to_move.items():
-        print(f"{src} -> {dest}")
+    print(f"\nThe following {media_type} will be moved:")
+    for _, dest in files_to_move.items():
+        log.info(f"{dest}")
 
-    if ask_bool("Do you want to move these files?"):
+    if ask_bool(f"Do you want to move these {media_type}?"):
         for src, dest in files_to_move.items():
+            log.debug(f"Creating directory: {dest.parent}")
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists():
                 log.info(f"File already exists: {dest}, skipping...")
             else:
                 try:
                     log.info(f"Moving: {src} -> {dest}")
-                    shutil.move(src, dest)
+                    # shutil.move(src, dest)
+                    _move_file(src, dest)
                 except Exception as e:
                     log.error(f"Failed to move {src} to {dest}: {e}")
 
@@ -410,25 +424,23 @@ def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Pat
     Prompts for library type (Television/Documentaries), network, etc.
     Returns the newly created path or None if user declines.
     """
-    print(f"Show '{show_name}' does not exist in the shows_map.ini.")
+    log.warning(f"Show '{show_name}' does not exist.")
     if not ask_bool(f"Do you want to add '{show_name}'?"):
         return None
 
-    # Prompt user for which library to use (this example is simplified)
     choice = ask_multichoice(["Television", "Documentaries"])
     if choice in SHOW_LIBRARIES:
         base_library_path = Path(SHOW_LIBRARIES[choice])
     else:
-        # Fallback if not found in SHOW_LIBRARIES
         log.warning(f"{choice} not found in SHOW_LIBRARIES, defaulting to /media/Television.")
         base_library_path = Path("/media/Television")
 
     show_network = ask_text_input("Please enter the network the show is on (e.g., 'HBO', 'BBC'):")
 
     new_show_dir = base_library_path.joinpath(show_network, show_name, season_name)
+    log.info(f"Making new show directory: {new_show_dir}")
     os.makedirs(new_show_dir, exist_ok=True)
 
-    # Add to shows_map.ini
     make_shows_map()
 
     return new_show_dir.joinpath(filename)
@@ -445,7 +457,8 @@ def _split_season_episode(season_episode):
     Returns:
         tuple: A tuple containing the season as a string and the episode as a string.
     """
-    split = season_episode[0].split("e")
+    season_episode = season_episode.lstrip("_").rstrip("_")
+    split = season_episode.split("e")
     season = split[0]
     episode = f"e{split[1]}"
     return season, episode

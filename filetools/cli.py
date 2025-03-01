@@ -15,7 +15,7 @@ from pathlib import Path
 import click
 
 from . import naming_files
-from .logging import setup_logger
+from .logger import setup_logger
 from .moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
 from .utils import dir_scan, make_shows_map, sort_media
 
@@ -53,46 +53,56 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_na
     else:
         log_level = logging.INFO
 
-    logger = setup_logger(name="filetools", level=log_level)
-    logger.info("Python version: %s", sys.version)
+    log = setup_logger(name="filetools", level=log_level)
+    log.debug("Python version: %s", sys.version)
 
     # make/Update show_map
     make_shows_map()
 
     work_dir = Path(path) if path else Path.cwd()
-    logger.info("Path to work on: %s", work_dir)
+    log.info("Path to work on: %s", work_dir)
 
     if extract_files:
-        logger.info("----------- extract_files -----------")
+        log.info("")
+        log.info("---------------------------------- Extract Files -----------------------------------")
+        log.info("")
         extract_from_src(work_dir)
-        logger.info("\n")
+        log.info("\n")
 
     if rename_files:
-        logger.info("----------- rename_files -----------")
+        log.info("")
+        log.info("----------------------------------- Rename Files ------------------------------------")
+        log.info("")
         naming_files.rename_files(work_dir)
-        logger.info("\n")
+        log.info("\n")
 
     if move_files:
-        logger.info("----------- move_to_libraries -----------")
+        log.info("")
+        log.info("------------------------------ Move Files To Libraries ------------------------------")
+        log.info("")
         movies, shows = sort_media(dir_scan(work_dir, True))
         move_movie_files(movies, work_dir)
         move_show_files(shows, work_dir)
-        logger.info("\n")
+        log.info("\n")
 
     if delete_empty_dirs:
-        logger.info("----------- delete_empty_dirs -----------")
+        log.info("")
+        log.info("--------------------------------- Delete Empty Dirs ---------------------------------")
+        log.info("")
         clean_empty_dirs(work_dir)
-        logger.info("\n")
+        log.info("\n")
 
     if fix_names:
-        logger.info("----------- fix_names -----------")
-        naming_files.fix_names(work_dir)
-        logger.info("\n")
+        # log.info("------------------------------------- Fix Names -------------------------------------")
+        # naming_files.fix_names(work_dir)
+        # log.info("\n")
+        log.info("Testing info log")
+        log.question("Testing question log")
+        log.debug("Testing debug log")
+        log.warning("Testing warning log")
+        log.error("Testing error log")
+        log.critical("Testing critical log")
 
 
 def main():
     cli()
-
-
-if __name__ == "__main__":
-    main()
