@@ -39,9 +39,11 @@ from .utils import dir_scan, make_shows_map, sort_media
     is_flag=True,
     help="Deletes all subdirectories that don't hold a specified video file",
 )
-@click.option("-fn", "--fix-names", is_flag=True, help="Fix file names to match them to the show maps")
+@click.option(
+    "-d", "--debug", is_flag=True, help="Run in debug mode: Log actions without renaming or moving files"
+)
 @click.option("-v", "--verbose", count=True, help="Increase verbosity level (use -v, -vv, or -vvv)")
-def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_names, verbose):
+def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, debug, verbose):
     """CLI function
     This is a starting point of the application execution.
     """
@@ -66,14 +68,14 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_na
         log.info("")
         log.info("---------------------------------- Extract Files -----------------------------------")
         log.info("")
-        extract_from_src(work_dir)
+        extract_from_src(work_dir, debug)
         log.info("\n")
 
     if rename_files:
         log.info("")
         log.info("----------------------------------- Rename Files ------------------------------------")
         log.info("")
-        naming_files.rename_files(work_dir)
+        naming_files.rename_files(work_dir, debug)
         log.info("\n")
 
     if move_files:
@@ -81,27 +83,16 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, fix_na
         log.info("------------------------------ Move Files To Libraries ------------------------------")
         log.info("")
         movies, shows = sort_media(dir_scan(work_dir, True))
-        move_movie_files(movies, work_dir)
-        move_show_files(shows, work_dir)
+        move_movie_files(movies, work_dir, debug)
+        move_show_files(shows, work_dir, debug)
         log.info("\n")
 
     if delete_empty_dirs:
         log.info("")
         log.info("--------------------------------- Delete Empty Dirs ---------------------------------")
         log.info("")
-        clean_empty_dirs(work_dir)
+        clean_empty_dirs(work_dir, debug)
         log.info("\n")
-
-    if fix_names:
-        # log.info("------------------------------------- Fix Names -------------------------------------")
-        # naming_files.fix_names(work_dir)
-        # log.info("\n")
-        log.info("Testing info log")
-        log.question("Testing question log")
-        log.debug("Testing debug log")
-        log.warning("Testing warning log")
-        log.error("Testing error log")
-        log.critical("Testing critical log")
 
 
 def main():

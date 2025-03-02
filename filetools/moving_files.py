@@ -37,7 +37,7 @@ MUSIC_LIBRARIES = CONFIG.music
 # --------------------------------------------------------------------------------
 
 
-def clean_empty_dirs(working_directory: Path):
+def clean_empty_dirs(working_directory: Path, debug: bool = False):
     """
     Recursively finds and deletes empty directories within the specified root directory.
 
@@ -61,16 +61,19 @@ def clean_empty_dirs(working_directory: Path):
 
         if ask_bool("Delete directories?"):
             for d in dirs_to_delete:
-                log.info(f"Deleting directory: {d}")
-                try:
-                    shutil.rmtree(d)
-                except OSError as e:
-                    log.error(f"Error deleting {d}: {e.strerror}")
+                if not debug:
+                    try:
+                        log.info(f"Deleting directory: {d}")
+                        shutil.rmtree(d)
+                    except OSError as e:
+                        log.error(f"Error deleting {d}: {e.strerror}")
+                else:
+                    log.info(f"[Debug] Deleting directory: {d}")
     else:
         log.info("No directories to delete")
 
 
-def extract_from_src(working_directory: Path):
+def extract_from_src(working_directory: Path, debug: bool = False):
     """
     Extracts files from the source directory to their new locations.
 
@@ -89,15 +92,18 @@ def extract_from_src(working_directory: Path):
 
     for old_path, new_path in files_to_extract.items():
         try:
-            log.info(f"Extracting......{old_path}")
-            shutil.move(old_path, new_path)
+            if not debug:
+                log.info(f"Extracting......{old_path}")
+                shutil.move(old_path, new_path)
+            else:
+                log.info(f"[Debug] Extracting......{old_path}")
         except Exception as e:
             log.error(f"Failed to move {old_path} to {new_path}: {e}")
 
     log.info("File extraction process completed")
 
 
-def move_movie_files(movies: List[Path], working_directory: Path):
+def move_movie_files(movies: List[Path], working_directory: Path, debug: bool = False):
     """
     Moves movie files from the working directory to their respective destinations.
 
@@ -122,10 +128,10 @@ def move_movie_files(movies: List[Path], working_directory: Path):
         if dest:
             files_to_move[src] = dest
 
-    _perform_moves(files_to_move, "movies")
+    _perform_moves(files_to_move, "movies", debug)
 
 
-def move_show_files(shows: List[Path], working_directory: Path):
+def move_show_files(shows: List[Path], working_directory: Path, debug: bool = False):
     """
     Moves show files to their respective destination directories.
 
@@ -144,7 +150,7 @@ def move_show_files(shows: List[Path], working_directory: Path):
         if dest:
             files_to_move[src] = dest
 
-    _perform_moves(files_to_move, "shows")
+    _perform_moves(files_to_move, "shows", debug)
 
 
 # --------------------------------------------------------------------------------
@@ -335,15 +341,15 @@ def _move_file(src: Path, dest: Path):
         log.info(f"Moved {src} -> {dest} using os.rename()")
         return
     except OSError as e:
-        if e.errno != errno.EXDEV:  # EXDEV means "cross-device link not permitted"
+        if e.errno != errno.EXDEV:
             log.error(f"Failed to move {src} -> {dest} using os.rename(): {e}")
-            raise  # Re-raise other errors
+            raise
 
     # If os.rename() fails due to cross-filesystem move, try sendfile()
     try:
         with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
             os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
-        os.unlink(src)  # Remove source after copy
+        os.unlink(src)
         log.info(f"Moved {src} -> {dest} using sendfile()")
         return
     except OSError as e:
@@ -359,7 +365,7 @@ def _move_file(src: Path, dest: Path):
         raise
 
 
-def _perform_moves(files_to_move: dict[Path, Path], media_type: str):
+def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool = False):
     """
     Moves files from source to destination as specified in the files_to_move dictionary.
 
@@ -389,9 +395,11 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str):
                 log.info(f"File already exists: {dest}, skipping...")
             else:
                 try:
-                    log.info(f"Moving: {src} -> {dest}")
-                    # shutil.move(src, dest)
-                    _move_file(src, dest)
+                    if not debug:
+                        log.info(f"Moving: {src} -> {dest}")
+                        _move_file(src, dest)
+                    else:
+                        log.info(f"[Debug] Moving: {src} -> {dest}")
                 except Exception as e:
                     log.error(f"Failed to move {src} to {dest}: {e}")
 

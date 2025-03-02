@@ -56,7 +56,7 @@ def dir_scan(scan_path: Union[str, Path], get_files: bool = False) -> List[os.Di
         log.warning(f"Provided path is not a directory: {scan_path}")
         return []
 
-    log.debug(f"Scanning directory: {scan_path}, get_files: {get_files}")
+    # log.debug(f"Scanning directory: {scan_path}, get_files: {get_files}")
 
     scan_output = []
 
@@ -220,48 +220,40 @@ def make_shows_map():
 
 def normalize_tv_format(season_episode: str) -> str:
     """
-    Converts season_episode in a list to the 's##e##' or 's####e##' format.
+    Converts season_episode to the 's##e##' or 's####e##' format.
 
     Args:
-        season_episode (str): List of strings containing season/episode information.
+        season_episode (str): A string containing season/episode information.
 
     Returns:
         str: season_episode formatted as 's##e##' or 's####e##'.
     """
-
     # Regex pattern to extract season and episode numbers from various formats
     pattern = re.compile(
         r"""
-        ^s(?P<season>\d{2,4})e(?P<episode>\d{2})$ |  # Matches S##E## or S####E##
-        season\s*(?P<season2>\d{2})\s*episode\s*(?P<episode2>\d{2}) |  # Season 01 Episode 01
-        season(?P<season3>\d{2})\s*episode(?P<episode3>\d{2}) |  # Season01 Episode01
-        season(?P<season4>\d{2})episode(?P<episode4>\d{2})  # Season01Episode01
+        s(?P<season>\d{2,4})e(?P<episode>\d{2}) |  # Matches S##E## or S####E##
+        season\s*(?P<season2>\d{1,4})\s*episode\s*(?P<episode2>\d{1,3}) |  # Season 01 Episode 01
+        season(?P<season3>\d{1,4})\s*episode(?P<episode3>\d{1,3}) |  # Season01 Episode01
+        season(?P<season4>\d{1,4})episode(?P<episode4>\d{1,3})  # Season01Episode01
         """,
         re.I | re.VERBOSE,
     )
 
     match = pattern.search(season_episode)
     if match:
-        # Extract season and episode numbers from matched groups
-        season = (
-            match.group("season")
-            or match.group("season2")
-            or match.group("season3")
-            or match.group("season4")
+        # Extract season and episode dynamically instead of hardcoding
+        season = next(
+            (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)), None
         )
-        episode = (
-            match.group("episode")
-            or match.group("episode2")
-            or match.group("episode3")
-            or match.group("episode4")
+        episode = next(
+            (match.group(g) for g in match.groupdict() if "episode" in g and match.group(g)), None
         )
 
-        # Normalize to "s##e##" format
-        return f"s{int(season):02}e{int(episode):02}"
+        if season and episode:
+            return f"s{int(season):02}e{int(episode):02}"
 
-    else:
-        log.debug("No normalization required.")
-        return season_episode
+    log.debug("No normalization required.")
+    return season_episode
 
 
 def sort_media(files_obj: List[os.DirEntry]) -> Tuple[List[Path], List[Path]]:

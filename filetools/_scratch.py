@@ -111,44 +111,9 @@ def test3():
             print("No match.\n")
 
 
-def move_file(src, dest):
-    """
-    Move a file reliably across any filesystem in a Linux-based Docker container.
-    - Uses os.rename() if possible (fastest).
-    - Falls back to sendfile() (zero-copy, Linux-only).
-    - Uses shutil.copyfile() + unlink() as a last resort.
-    """
-
-    # Try os.rename() first (fastest if on the same filesystem)
-    try:
-        os.rename(src, dest)
-        print(f"Moved {src} -> {dest} using os.rename()")
-        return
-    except OSError as e:
-        if e.errno != errno.EXDEV:  # EXDEV means "cross-device link not permitted"
-            raise  # Re-raise other errors
-
-    # If os.rename() fails due to cross-filesystem move, try sendfile()
-    try:
-        with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
-            os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
-        os.unlink(src)  # Remove source after copy
-        print(f"Moved {src} -> {dest} using sendfile()")
-        return
-    except OSError:
-        pass  # If sendfile() fails, continue to shutil
-
-    # Final fallback: Use shutil.copyfile() and remove source manually
-    shutil.copyfile(src, dest)
-    os.unlink(src)  # Remove source after copying
-    print(f"Moved {src} -> {dest} using shutil.copyfile() + unlink()")
-
-
 def test4():
     import os
     import shutil
 
     src = "/transmission/test_file.mkv"
     dest = "/media/movies/test_file.mkv"
-
-    move_file(src, dest)

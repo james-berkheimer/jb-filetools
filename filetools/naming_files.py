@@ -3,6 +3,7 @@ import os
 import re
 import traceback
 from pathlib import Path
+from typing import Union
 
 from . import CONFIG
 from .utils import dir_scan, parse_filename
@@ -22,7 +23,7 @@ NAME_CLEANUP_FLAGS = CONFIG.name_cleanup_flags  # New setting for words to remov
 # --------------------------------------------------------------------------------
 
 
-def rename_files(target_dir: Path):
+def rename_files(target_dir: Path, debug: bool = False):
     """
     Scans and renames files in the target directory based on predefined naming conventions.
 
@@ -38,7 +39,7 @@ def rename_files(target_dir: Path):
         file_ext = os.path.splitext(file_obj.name)[1]
         if file_ext in VIDEO_FILE_EXTENSIONS and file_ext not in FILE_EXCLUDES:
             try:
-                _rename(file_obj)
+                _rename(file_obj, debug)
             except Exception as e:
                 log.error(f"Failed to rename {file_obj.name}: {e}\n{traceback.format_exc()}")
 
@@ -52,6 +53,10 @@ def _format_tv_show_name(
     sanitized_episode_name: str, season_episode: str, flags_name: str, file_ext: str
 ) -> str:
     """Formats a TV show filename with season and episode information."""
+    log.debug(f"\tsanitized_episode_name: {sanitized_episode_name}")
+    log.debug(f"\tseason_episode: {season_episode}")
+    log.debug(f"\tflags_name: {flags_name}")
+    log.debug(f"\tfile_ext: {file_ext}")
     return f"{sanitized_episode_name}_{season_episode}{flags_name}{file_ext}".lower()
 
 
@@ -118,7 +123,7 @@ def _is_properly_formatted(file_name: str) -> bool:
     return bool(movie_pattern.match(file_name) or show_pattern.match(file_name))
 
 
-def _rename(file_obj):
+def _rename(file_obj: Union[os.DirEntry, Path], debug: bool = False):
     """Renames a file based on predefined naming conventions."""
     new_name = ""
     flags = []
@@ -142,14 +147,20 @@ def _rename(file_obj):
         sanitized_show_name = _sanitize_show_name(
             show_name,
         )
-        new_name = _format_tv_show_name(sanitized_show_name, season_episode, flags_name, file_ext)
+        sanitized_season_episode = _sanitize_season_episode(season_episode)
+        new_name = _format_tv_show_name(
+            sanitized_show_name, sanitized_season_episode, flags_name, file_ext
+        )
     else:
         new_name = _format_movie_name(filename_wo_ext, file_ext)
 
     new_name_path = file_path / new_name
     if not new_name_path.exists():
-        log.info(f"Renaming.....{file_obj.name} -> {new_name}")
-        os.rename(file_obj.path, new_name_path)
+        if not debug:
+            log.info(f"Renaming.....{file_obj.name} -> {new_name}")
+            os.rename(file_obj.path, new_name_path)
+        else:
+            log.info(f"[Debug] Renaming.....{file_obj.name} -> {new_name}")
 
 
 def _sanitize_show_name(show_name: str) -> str:
@@ -171,6 +182,12 @@ def _sanitize_show_name(show_name: str) -> str:
         .rstrip()
     )
     return sanatized_filename.lower()
+
+
+def _sanitize_season_episode(season_episode: str) -> str:
+    """Sanitizes a season and episode string by removing unwanted characters."""
+    sanitized = season_episode.replace(".", "").replace(" ", "").replace("_", "")
+    return sanitized
 
 
 def _should_delete(file_name: str) -> bool:
