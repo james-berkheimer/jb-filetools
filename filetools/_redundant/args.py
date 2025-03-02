@@ -10,7 +10,7 @@
 # --------------------------------------------------------------------------------
 import argparse
 
-import const as const
+from .. import constants
 
 # --------------------------------------------------------------------------------
 # Globals
@@ -28,7 +28,7 @@ PARSER.add_argument(
     metavar='root',
     type=str,
     nargs='?',
-    default=const.FILE_ROOT,
+    default=constants.FILE_ROOT,
     help='path to directory to be worked on'
 )
 

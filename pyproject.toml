@@ -1,28 +1,77 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "filetools"
-version = "0.0.0" # Placeholder for the dynamic version
-authors = [
-  { name="James Berkheimer", email="james.berkheimer@gmail.com" },
-]
+version = "0.0.0" # Placeholder or dynamic versioning
+authors = [{ name = "James Berkheimer", email = "james.berkheimer@gmail.com" }]
 description = "A set of tools to help parse downloaded media files"
-readme = "README.md"
-requires-python = ">=3.11"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
-[project.scripts]
-filetools = "filetools.main:main"
+dependencies = ["click>=8.1.3", "colorlog>=6.4.1"]
 
-[project.urls]
-"Homepage" = "https://github.com/james-berkheimer/jb-filetools"
-"Bug Tracker" = "https://github.com/james-berkheimer/jb-filetools/issues"
+[project.scripts]
+filetools = "filetools.cli:main"
+test1 = "filetools._scratch:test1"
+test2 = "filetools._scratch:test2"
+test3 = "filetools._scratch:test3"
+test4 = "filetools._scratch:test4"
+
+[tool.hatch.build]
+targets = { wheel = {} }
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.0.282",
+    "tox>=4.0",
+    "build>=1.0",
+    "pytest>=7.0",
+    "coverage>=6.0",
+    "hatchling>=1.0",
+    "python-dotenv>=0.19",
+]
 
 [tool.hatch.version]
 path = "VERSION"
+
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".cache",
+    ".direnv",
+    ".eggs",
+    "*.egg-info",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    "*.pyc",
+    "__pycache__",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    ".code-workspace",
+]
+select = ["B", "C", "E", "F", "N", "W", "B9"]
+ignore = ["E203", "E501", "E722", "N802", "F401"]
+line-length = 105

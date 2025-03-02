@@ -1,0 +1,37 @@
+{
+  "files_to_delete": [".DS_Store", "RARBG.txt", ".srt", ".nfo", ".sfv", "Thumbs.db", ".txt", "Sample.mkv", "Trailer.mkv", ".jpg", ".vtx"],
+  "do_not_delete": [".part"],
+  "video_file_extensions": [".mkv", ".mp4", ".mpeg", ".mpg", ".mov", ".avi"],
+  "file_excludes": [".part", "Sample.mkv", "sample.mkv", "Trailer.mkv", ".DS_Store"],
+  "file_ignores": ["sample", "trailer"],
+  "name_cleanup_flags": ["bbc", "pbs", "itv", "ch4"],
+  "year_min": 1900,
+  "year_max": 2030,
+  "libraries":
+    {
+        "shows": [
+            {
+                "name": "Documentaries",
+                "path": "/media/documentaries"
+            },
+            {
+                "name": "Television",
+                "path": "/media/television"
+            }
+
+        ],
+        "movies": [
+            {
+                "name": "Movies",
+                "path": "/media/movies"
+            }
+        ],
+        "music": [
+            {
+                "name": "Music",
+                "path": "/media/music"
+            }
+        ]
+    },
+  "default_source": "/transmission"
+}
