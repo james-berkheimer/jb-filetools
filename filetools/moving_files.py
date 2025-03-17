@@ -10,12 +10,12 @@ import errno
 import logging
 import os
 import shutil
+from os import DirEntry
 from pathlib import Path
-from typing import List
 
-from . import CONFIG
-from .questions import ask_bool, ask_multichoice, ask_text_input
-from .utils import dir_scan, get_show_map, make_shows_map, parse_filename
+from filetools import CONFIG
+from filetools.questions import ask_bool, ask_multichoice, ask_text_input
+from filetools.utils import dir_scan, get_show_map, make_shows_map, parse_filename
 
 log = logging.getLogger("filetools")
 
@@ -37,20 +37,15 @@ MUSIC_LIBRARIES = CONFIG.music
 # --------------------------------------------------------------------------------
 
 
-def clean_empty_dirs(working_directory: Path, debug: bool = False):
-    """
-    Recursively finds and deletes empty directories within the specified root directory.
+def clean_empty_dirs(working_directory: Path, debug: bool = False) -> None:
+    """Delete empty directories within the specified root directory.
 
     Args:
-        working_directory (Path): The root directory to search for empty directories.
-
-    Logs:
-        - Lists all empty directories found.
-        - Asks the user for confirmation before deleting directories.
-        - Logs each directory deletion attempt and any errors encountered.
+        working_directory: The root directory to search for empty directories
+        debug: If True, run in simulation mode without making actual changes
 
     Raises:
-        OSError: If an error occurs while attempting to delete a directory.
+        OSError: If deletion of a directory fails
     """
     dirs_to_delete = _get_empty_dirs(working_directory)
 
@@ -73,20 +68,12 @@ def clean_empty_dirs(working_directory: Path, debug: bool = False):
         log.info("No directories to delete")
 
 
-def extract_from_src(working_directory: Path, debug: bool = False):
-    """
-    Extracts files from the source directory to their new locations.
-
-    This function retrieves a list of files to be moved from the source directory
-    specified by `working_directory` and moves each file to its new location. It logs the
-    progress of the extraction process, including any errors encountered during
-    the file moves.
+def extract_from_src(working_directory: Path, debug: bool = False) -> None:
+    """Extract files from source directory to their new locations.
 
     Args:
-        working_directory (Path): The root directory containing the files to be extracted.
-
-    Raises:
-        Exception: If an error occurs while moving a file, it is logged but not re-raised.
+        working_directory: The root directory containing files to extract
+        debug: If True, run in simulation mode without making actual changes
     """
     files_to_extract = _get_files_to_extract(working_directory)
 
@@ -103,22 +90,17 @@ def extract_from_src(working_directory: Path, debug: bool = False):
     log.info("File extraction process completed")
 
 
-def move_movie_files(movies: List[Path], working_directory: Path, debug: bool = False):
-    """
-    Moves movie files from the working directory to their respective destinations.
-
-    This function takes a list of movie file paths and a working directory path,
-    then moves each movie file to its designated destination. If the destination
-    directory does not exist, it will be created.
+def move_movie_files(movies: list[Path], working_directory: Path, debug: bool = False) -> None:
+    """Move movie files to their respective destination directories.
 
     Args:
-        movies (List[Path]): A list of movie file paths to be moved.
-        working_directory (Path): The path to the working directory where the
-                                  movie files are currently located.
+        movies: List of movie file paths to be moved
+        working_directory: Directory where movie files are currently located
+        debug: If True, run in simulation mode without making actual changes
 
     Raises:
-        FileNotFoundError: If any of the movie files do not exist in the working directory.
-        OSError: If there is an error creating directories or moving files.
+        FileNotFoundError: If any movie files don't exist in working directory
+        OSError: If creating directories or moving files fails
     """
     files_to_move = {}
 
@@ -131,9 +113,8 @@ def move_movie_files(movies: List[Path], working_directory: Path, debug: bool = 
     _perform_moves(files_to_move, "movies", debug)
 
 
-def move_show_files(shows: List[Path], working_directory: Path, debug: bool = False):
-    """
-    Moves show files to their respective destination directories.
+def move_show_files(shows: list[Path], working_directory: Path, debug: bool = False) -> None:
+    """Moves show files to their respective destination directories.
 
     Args:
         shows (List[Path]): A list of show file paths to be moved.
@@ -159,8 +140,7 @@ def move_show_files(shows: List[Path], working_directory: Path, debug: bool = Fa
 
 
 def _build_movie_destination(movie_path: Path) -> Path | None:
-    """
-    Builds the destination path for a movie file within a selected movie library.
+    """Builds the destination path for a movie file within a selected movie library.
 
     Args:
         movie_name (str): The name of the movie file.
@@ -184,8 +164,7 @@ def _build_movie_destination(movie_path: Path) -> Path | None:
 
 
 def _build_show_destination(show_path: Path) -> Path | None:
-    """
-    Constructs the destination path for a given show name.
+    """Constructs the destination path for a given show name.
 
     This function attempts to parse the season and episode information from the
     provided show name. If successful, it constructs a destination path based on
@@ -225,8 +204,7 @@ def _build_show_destination(show_path: Path) -> Path | None:
 
 
 def _choose_library(library_dict: dict[str, str], prompt: str) -> Path | None:
-    """
-    Selects a library from a dictionary of library names and their corresponding paths.
+    """Selects a library from a dictionary of library names and their corresponding paths.
 
     Args:
         library_dict (dict[str, str]): A dictionary where keys are library names and values are their paths.
@@ -242,13 +220,11 @@ def _choose_library(library_dict: dict[str, str], prompt: str) -> Path | None:
     if len(library_names) > 1:
         choice = ask_multichoice(library_names, prompt)
         return Path(library_dict[choice])
-    else:
-        return Path(library_dict[library_names[0]])
+    return Path(library_dict[library_names[0]])
 
 
-def _get_empty_dirs(working_directory: Path):
-    """
-    Identify empty directories within a given root directory.
+def _get_empty_dirs(working_directory: Path) -> list[Path]:
+    """Identify empty directories within a given root directory.
 
     This function scans the specified root directory and identifies directories
     that can be considered empty based on the absence of certain file types.
@@ -273,16 +249,14 @@ def _get_empty_dirs(working_directory: Path):
             if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
                 if "sample" in file_obj.name.lower() or "trailer" in file_obj.name.lower():
                     continue
-                else:
-                    delete = False
+                delete = False
         if delete:
             dirs_to_delete.append(working_directory.joinpath(dir_obj.name))
     return dirs_to_delete
 
 
-def _get_files_to_extract(working_directory: Path):
-    """
-    Scans the given root directory and identifies files to be extracted.
+def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
+    """Scans the given root directory and identifies files to be extracted.
 
     This function recursively scans the root directory and its subdirectories,
     identifying files that are ready to be extracted. It skips directories
@@ -324,16 +298,20 @@ def _get_files_to_extract(working_directory: Path):
     return files_to_extract
 
 
-def _move_file(src: Path, dest: Path):
-    """
-    Move a file reliably across any filesystem in a Linux-based Docker container.
-    - Uses os.rename() if possible (fastest).
-    - Falls back to sendfile() (zero-copy, Linux-only).
-    - Uses shutil.copyfile() + unlink() as a last resort.
+def _move_file(src: Path, dest: Path) -> None:
+    """Move a file reliably across filesystems.
+
+    Attempts multiple methods in order of preference:
+    1. os.rename() (fastest, same filesystem)
+    2. sendfile() (zero-copy, Linux-only)
+    3. shutil.copyfile() + unlink() (fallback)
 
     Args:
-        src (Path): The source file path.
-        dest (Path): The destination file path.
+        src: Source file path
+        dest: Destination file path
+
+    Raises:
+        OSError: If all move attempts fail
     """
     # Try os.rename() first (fastest if on the same filesystem)
     try:
@@ -365,20 +343,13 @@ def _move_file(src: Path, dest: Path):
         raise
 
 
-def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool = False):
-    """
-    Moves files from source to destination as specified in the files_to_move dictionary.
+def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool = False) -> None:
+    """Move files from source to destination paths.
 
     Args:
-        files_to_move (dict[Path, Path]): A dictionary where keys are source file paths and values are destination file paths.
-
-    Returns:
-        None
-
-    The function first prints the list of files to be moved. It then prompts the user for confirmation to proceed with the move.
-    If the user confirms, it creates the necessary directories at the destination if they do not exist, and moves the files.
-    If a file already exists at the destination, it logs a message and skips moving that file. If an error occurs during the move,
-    it logs an error message.
+        files_to_move: Dictionary mapping source paths to destination paths
+        media_type: Type of media being moved (e.g., "movies", "shows")
+        debug: If True, run in simulation mode without making actual changes
     """
     if not files_to_move:
         return
@@ -404,12 +375,11 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool
                     log.error(f"Failed to move {src} to {dest}: {e}")
 
 
-def _process_file(file_obj, working_directory):
-    """
-    Processes a file object to determine its new path based on its extension.
+def _process_file(file_obj: DirEntry, working_directory: Path) -> tuple[Path | None, bool]:
+    """Processes a file object to determine its new path based on its extension.
 
     Args:
-        file_obj (File): The file object to be processed.
+        file_obj (DirEntry): The DirEntry object representing the file to be processed.
         working_directory (Path): The directory where the file should be moved if applicable.
 
     Returns:
@@ -427,8 +397,7 @@ def _process_file(file_obj, working_directory):
 
 
 def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Path | None:
-    """
-    If the show isn't in shows_map.ini, asks user whether to add it.
+    """If the show isn't in shows_map.ini, asks user whether to add it.
     Prompts for library type (Television/Documentaries), network, etc.
     Returns the newly created path or None if user declines.
     """
@@ -454,9 +423,8 @@ def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Pat
     return new_show_dir.joinpath(filename)
 
 
-def _split_season_episode(season_episode):
-    """
-    Splits a season and episode string into separate components.
+def _split_season_episode(season_episode: str) -> tuple[str, str]:
+    """Splits a season and episode string into separate components.
 
     Args:
         season_episode (list): A list containing a single string in the format "SxxExx",
@@ -472,12 +440,11 @@ def _split_season_episode(season_episode):
     return season, episode
 
 
-def _should_skip_directory(dir_obj):
-    """
-    Determines whether a directory should be skipped based on its name.
+def _should_skip_directory(dir_obj: DirEntry) -> bool:
+    """Determines whether a directory should be skipped based on its name.
 
     Args:
-        dir_obj (object): An object representing a directory, which must have a 'name' attribute.
+        dir_obj (DirEntry): A DirEntry object representing a directory to check.
 
     Returns:
         bool: True if the directory's name is "_in-progress", indicating it should be skipped; False otherwise.

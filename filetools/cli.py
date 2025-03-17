@@ -11,13 +11,14 @@
 import logging
 import sys
 from pathlib import Path
+from typing import Optional
 
 import click
 
-from . import naming_files
-from .logger import setup_logger
-from .moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
-from .utils import dir_scan, make_shows_map, sort_media
+from filetools import naming_files
+from filetools.logger import setup_logger
+from filetools.moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
+from filetools.utils import dir_scan, make_shows_map, sort_media
 
 
 # --------------------------------------------------------------------------------
@@ -43,9 +44,28 @@ from .utils import dir_scan, make_shows_map, sort_media
     "-d", "--debug", is_flag=True, help="Run in debug mode: Log actions without renaming or moving files"
 )
 @click.option("-v", "--verbose", count=True, help="Increase verbosity level (use -v, -vv, or -vvv)")
-def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, debug, verbose):
-    """CLI function
-    This is a starting point of the application execution.
+def cli(
+    path: Optional[str],
+    extract_files: bool,
+    rename_files: bool,
+    move_files: bool,
+    delete_empty_dirs: bool,
+    debug: bool,
+    verbose: int,
+) -> None:
+    """Process media files with various operations like extraction, renaming, and moving.
+
+    Args:
+        path: Directory path to process. Defaults to current working directory if not specified.
+        extract_files: If True, extract video files from subdirectories.
+        rename_files: If True, rename files to standardized formats.
+        move_files: If True, move renamed files to appropriate locations.
+        delete_empty_dirs: If True, remove empty directories after processing.
+        debug: If True, run in simulation mode without making actual changes.
+        verbose: Logging verbosity level (0=INFO, 1=DEBUG, 2+=NOTSET).
+
+    Returns:
+        None
     """
     # Set the logging level based on the verbosity
     if verbose == 1:
@@ -95,5 +115,6 @@ def cli(path, extract_files, rename_files, move_files, delete_empty_dirs, debug,
         log.info("\n")
 
 
-def main():
+def main() -> None:
+    """Entry point for the filetools CLI application."""
     cli()

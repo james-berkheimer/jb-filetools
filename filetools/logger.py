@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import colorlog
 
@@ -8,18 +9,29 @@ QUESTION = 25
 logging.addLevelName(QUESTION, "QUESTION")
 
 
-def question(self, message, *args, **kwargs):
-    """Custom log method for handling user questions with "|| " prefix."""
-    if self.isEnabledFor(QUESTION):
-        self._log(QUESTION, message, args, **kwargs)
+# def question(self, message, *args, **kwargs) -> None:
+#     """Custom log method for handling user questions with "|| " prefix."""
+#     if self.isEnabledFor(QUESTION):
+#         self._log(QUESTION, message, args, **kwargs)
 
 
-logging.Logger.question = question  # Add to logger class
+# logging.Logger.question = question  # Add to logger class
 
 
-def setup_logger(name=None, level=logging.INFO):
-    """Return a logger with a default ColoredFormatter."""
+def setup_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
+    """Configure and return a logger with colored output formatting.
 
+    Sets up a logger with two handlers:
+    1. Info/Question handler: Uses "|| " prefix without level name
+    2. Standard handler: Uses "|| " prefix with level name for other log levels
+
+    Args:
+        name: The name of the logger. Defaults to "filetools" if None
+        level: The logging level to set. Defaults to logging.INFO
+
+    Returns:
+        logging.Logger: Configured logger instance with colored formatting
+    """
     # Use a consistent logger name
     logger = colorlog.getLogger(name) if name else logging.getLogger("filetools")
 

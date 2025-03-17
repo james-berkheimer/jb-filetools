@@ -5,8 +5,8 @@ import traceback
 from pathlib import Path
 from typing import Union
 
-from . import CONFIG
-from .utils import dir_scan, parse_filename
+from filetools import CONFIG
+from filetools.utils import dir_scan, parse_filename
 
 log = logging.getLogger("filetools")
 
@@ -23,12 +23,15 @@ NAME_CLEANUP_FLAGS = CONFIG.name_cleanup_flags  # New setting for words to remov
 # --------------------------------------------------------------------------------
 
 
-def rename_files(target_dir: Path, debug: bool = False):
-    """
-    Scans and renames files in the target directory based on predefined naming conventions.
+def rename_files(target_dir: Path, debug: bool = False) -> None:
+    """Scan and rename files in target directory using standardized naming conventions.
 
     Args:
-        target_dir (Path): The directory containing files to be renamed.
+        target_dir: Directory containing files to be renamed
+        debug: If True, run in simulation mode without making actual changes
+
+    Raises:
+        OSError: If file operations fail
     """
     for file_obj in dir_scan(target_dir, get_files=True):
         if _should_delete(file_obj.name):
@@ -52,7 +55,17 @@ def rename_files(target_dir: Path, debug: bool = False):
 def _format_tv_show_name(
     sanitized_episode_name: str, season_episode: str, flags_name: str, file_ext: str
 ) -> str:
-    """Formats a TV show filename with season and episode information."""
+    """Format TV show filename with season and episode information.
+
+    Args:
+        sanitized_episode_name: Clean show name without special characters
+        season_episode: Season and episode identifier (e.g. 's01e01')
+        flags_name: Additional flags like 4K or HDR
+        file_ext: File extension including dot
+
+    Returns:
+        str: Formatted filename in the pattern: show_name_s01e01[flags].ext
+    """
     log.debug(f"\tsanitized_episode_name: {sanitized_episode_name}")
     log.debug(f"\tseason_episode: {season_episode}")
     log.debug(f"\tflags_name: {flags_name}")
@@ -61,7 +74,15 @@ def _format_tv_show_name(
 
 
 def _format_movie_name(filename_wo_ext: str, file_ext: str) -> str:
-    """Formats a movie filename, extracting year and applying proper conventions."""
+    """Format movie filename with year and quality flags.
+
+    Args:
+        filename_wo_ext: Movie name without extension
+        file_ext: File extension including dot
+
+    Returns:
+        str: Formatted filename in the pattern: movie_name(year)-4K-hdr.ext
+    """
     fk, hdr = "", ""
     if "2160p" in filename_wo_ext:
         fk = "-4K"
@@ -74,22 +95,20 @@ def _format_movie_name(filename_wo_ext: str, file_ext: str) -> str:
     year = _get_year(filename_wo_ext)
     if year:
         filename_wo_ext_split = filename_wo_ext.split(year)[0]
-        new_name = f"{filename_wo_ext_split}({year}){fk}{hdr}{file_ext}"
-        return new_name
+        return f"{filename_wo_ext_split}({year}){fk}{hdr}{file_ext}"
 
     log.warning(f"Failed to rename {filename_wo_ext}: No valid year found.")
     return filename_wo_ext + file_ext
 
 
 def _get_year(target_string: str) -> str | None:
-    """
-    Extracts the most recent 4-digit year from a given string.
+    """Extract the most recent 4-digit year from a string.
 
     Args:
-        target_string (str): The string to search.
+        target_string: String to search for year
 
     Returns:
-        str | None: The most recent valid year (within settings range) or None if no match is found.
+        str | None: Most recent valid year between year_min and year_max, or None if not found
     """
     year_min = CONFIG.year_min
     year_max = CONFIG.year_max
@@ -108,14 +127,13 @@ def _get_year(target_string: str) -> str | None:
 
 
 def _is_properly_formatted(file_name: str) -> bool:
-    """
-    Checks if a file name is properly formatted as either a movie or a TV show.
+    """Check if filename matches movie or TV show naming conventions.
 
     Args:
-        file_name (str): The name of the file to check.
+        file_name: Name of file to check
 
     Returns:
-        bool: True if the file name is properly formatted, False otherwise.
+        bool: True if filename matches either movie or show pattern
     """
     movie_pattern = re.compile(r"^[a-z0-9_]+_\(\d{4}\)\.[a-z0-9]+$")
     show_pattern = re.compile(r"^[a-z0-9_]+_s\d{2,4}e\d{2,3}\.[a-z0-9]+$")
@@ -123,8 +141,16 @@ def _is_properly_formatted(file_name: str) -> bool:
     return bool(movie_pattern.match(file_name) or show_pattern.match(file_name))
 
 
-def _rename(file_obj: Union[os.DirEntry, Path], debug: bool = False):
-    """Renames a file based on predefined naming conventions."""
+def _rename(file_obj: Union[os.DirEntry, Path], debug: bool = False) -> None:
+    """Rename a file using standardized naming conventions.
+
+    Args:
+        file_obj: File object to rename
+        debug: If True, run in simulation mode without making actual changes
+
+    Raises:
+        OSError: If rename operation fails
+    """
     new_name = ""
     flags = []
     file_obj_name = file_obj.name.lower()
@@ -164,8 +190,13 @@ def _rename(file_obj: Union[os.DirEntry, Path], debug: bool = False):
 
 
 def _sanitize_show_name(show_name: str) -> str:
-    """
-    Cleans up filename by removing unwanted words and characters based on user-defined settings.
+    """Clean up show name by removing unwanted words and special characters.
+
+    Args:
+        show_name: Original show name
+
+    Returns:
+        str: Sanitized show name in lowercase with underscores
     """
     sanitized_filename = show_name
     for word in NAME_CLEANUP_FLAGS:
@@ -185,11 +216,24 @@ def _sanitize_show_name(show_name: str) -> str:
 
 
 def _sanitize_season_episode(season_episode: str) -> str:
-    """Sanitizes a season and episode string by removing unwanted characters."""
-    sanitized = season_episode.replace(".", "").replace(" ", "").replace("_", "")
-    return sanitized
+    """Clean up season and episode identifier.
+
+    Args:
+        season_episode: Original season/episode string (e.g. 'S01E01', 's.01.e.01')
+
+    Returns:
+        str: Clean season/episode string (e.g. 's01e01')
+    """
+    return season_episode.replace(".", "").replace(" ", "").replace("_", "")
 
 
 def _should_delete(file_name: str) -> bool:
-    """Checks if a file should be deleted based on predefined rules."""
+    """Check if file should be deleted based on configured patterns.
+
+    Args:
+        file_name: Name of file to check
+
+    Returns:
+        bool: True if file matches any deletion patterns
+    """
     return any(flag in file_name for flag in FILES_TO_DELETE)

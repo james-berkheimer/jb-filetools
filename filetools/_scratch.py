@@ -4,16 +4,14 @@ import os
 import re
 import shutil
 
-from .logger import setup_logger
-from .questions import ask_bool
-from .utils import dir_scan, make_shows_map
+from filetools.logger import setup_logger
+from filetools.questions import ask_bool
+from filetools.utils import dir_scan, make_shows_map
 
 log = setup_logger(name="filetools", level=logging.INFO)
 
 
-def test1():
-    transmission = "/torrents/Transmission"
-    docs = "/media/Documentaries"
+def test1() -> None:
     tv = "/media/Television"
     # print(dir_scan(path, get_files=True))
     # print(dir_scan(transmission))
@@ -21,23 +19,21 @@ def test1():
     print(dir_scan(tv))
 
 
-def test2():
+def test2() -> None:
     # answer = ask_bool("Does AI work?")
     answer = input("Does AI work? (y/n): ")
     log.info(f"Answer: {answer}")
 
 
-def normalize_tv_format(filename):
-    """
-    Converts all items in a list to the 's##e##' or 's####e##' format.
+def normalize_tv_format(filename: str) -> str:
+    """Converts a filename to the 's##e##' or 's####e##' format.
 
     Args:
-        tv_list (list): List of strings containing season/episode information.
+        filename (str): A string containing season/episode information.
 
     Returns:
-        list: A new list with all items formatted as 's##e##' or 's####e##'.
+        str: The normalized filename formatted as 's##e##' or 's####e##'.
     """
-
     # Regex pattern to extract season and episode numbers from various formats
     pattern = re.compile(
         r"""
@@ -68,12 +64,11 @@ def normalize_tv_format(filename):
         # Normalize to "s##e##" format
         return f"s{int(season):02}e{int(episode):02}"
 
-    else:
-        log.debug("No normalization required.")
-        return filename
+    log.debug("No normalization required.")
+    return filename
 
 
-def test3():
+def test3() -> None:
     filenames = [
         "The Mandalorian - S01E01 - Chapter 1.mp4",
         "The Mandalorian - Season 01 Episode 01 - Chapter 1.mp4",
@@ -111,9 +106,19 @@ def test3():
             print("No match.\n")
 
 
-def test4():
-    import os
-    import shutil
+def test4() -> None:
+    pass
 
-    src = "/transmission/test_file.mkv"
-    dest = "/media/movies/test_file.mkv"
+
+def f(x, y, z):
+    """Something about `f`.
+    And an example:
+
+    .. code-block:: python
+
+        foo, bar, quux = this_is_a_long_line(lion, hippo, lemur, bear)
+    """
+    x = [1, 2, 3]
+    y = "test string"
+    z = {"key": "value"}
+    return x, y, z
