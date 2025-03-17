@@ -35,12 +35,6 @@ exclude = [
     "venv",
     "vendor",
     "generated",
-    "client/ayon_deadline/repository/custom/plugins/CelAction/*",
-    "client/ayon_deadline/repository/custom/plugins/HarmonyAYON/*",
-    "client/ayon_deadline/repository/custom/plugins/UnrealEngine5",
-    "client/ayon_hiero/vendor",
-    "client/ayon_hiero/api/startup/Python",
-    "client/ayon_nuke/vendor",
     "_redunant/",
 ]
 
