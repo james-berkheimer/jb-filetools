@@ -71,6 +71,7 @@ ignore = [
     "D100",   # Missing docstring in public module
     "D104",   # Missing docstring in public package
     "S101",   # Use of assert detected
+    "F841",   # Local variable is assigned to but never used
 ]
 
 fixable = ["ALL"]

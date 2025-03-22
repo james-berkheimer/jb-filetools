@@ -12,26 +12,26 @@
         "shows": [
             {
                 "name": "Documentaries",
-                "path": "/media/documentaries"
+                "path": "/mnt/media/documentaries"
             },
             {
                 "name": "Television",
-                "path": "/media/television"
+                "path": "/mnt/media/television"
             }
 
         ],
         "movies": [
             {
                 "name": "Movies",
-                "path": "/media/movies"
+                "path": "/mnt/media/movies"
             }
         ],
         "music": [
             {
                 "name": "Music",
-                "path": "/media/music"
+                "path": "/mnt/media/music"
             }
         ]
     },
-  "default_source": "/transmission"
+  "default_source": "/mnt/media/transmission"
 }

@@ -354,7 +354,7 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool
     if not files_to_move:
         return
 
-    print(f"\nThe following {media_type} will be moved:")
+    log.info(f"\nThe following {media_type} will be moved:")
     for _, dest in files_to_move.items():
         log.info(f"{dest}")
 

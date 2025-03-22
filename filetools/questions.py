@@ -85,19 +85,19 @@ def ask_multichoice(choices: list[str]) -> str:
 
     choice_dict: dict = {str(i + 1): choice for i, choice in enumerate(choices)}
 
-    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")  # Logs prompt in green
+    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")
     for key, value in choice_dict.items():
-        print(f"{key}) {value}")  # Keep menu choices visible
+        log.info(f"{key}) {value}")
 
     while True:
-        user_input = input("\n|| ").strip()  # Keeps "|| " input formatting
+        user_input = input("\n|| ").strip()
 
         if user_input in choice_dict:
             log.info(f"User selected choice {user_input}: {choice_dict[user_input]}")
             return choice_dict[user_input]
 
         log.warning(f"Invalid choice: {user_input}. Expected one of {list(choice_dict.keys())}.")
-        print(f"Invalid choice: {user_input}. Please enter a valid number from the list.")
+        log.warning(f"Invalid choice: {user_input}. Please enter a valid number from the list.")
 
 
 def ask_text_input(qstring: str) -> str:
@@ -114,7 +114,8 @@ def ask_text_input(qstring: str) -> str:
         Enter show name? The Office
         'the_office'
     """
-    answer = None
     question = qstring + "? "
-    answer = input(question)
+    # Use logger for the question
+    log.question(question)
+    answer = input("|| ")
     return answer.replace(" ", "_").lower()

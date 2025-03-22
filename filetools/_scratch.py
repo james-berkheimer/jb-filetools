@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import shutil
+import time
+from pathlib import Path
 
 from filetools.logger import setup_logger
 from filetools.questions import ask_bool
@@ -107,7 +109,19 @@ def test3() -> None:
 
 
 def test4() -> None:
-    pass
+    src1 = "/mnt/media/transmission/_saved/test_file1.mkv"
+    src2 = "/mnt/media/transmission/_saved/test_file2.mkv"
+    dest = "/mnt/media/documentaries"
+
+    # shutil.move test
+    start = time.perf_counter()
+    shutil.move(src1, dest)
+    print(f"shutil.move: {time.perf_counter() - start:.6f} seconds")
+
+    # os.rename test
+    start = time.perf_counter()
+    os.rename(src2, os.path.join(dest, os.path.basename(src2)))
+    print(f"os.rename: {time.perf_counter() - start:.6f} seconds")
 
 
 def f(x, y, z):

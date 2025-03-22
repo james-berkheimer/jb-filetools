@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import colorlog
 
@@ -9,13 +9,15 @@ QUESTION = 25
 logging.addLevelName(QUESTION, "QUESTION")
 
 
-# def question(self, message, *args, **kwargs) -> None:
-#     """Custom log method for handling user questions with "|| " prefix."""
-#     if self.isEnabledFor(QUESTION):
-#         self._log(QUESTION, message, args, **kwargs)
+def question(
+    self: logging.Logger, message: str, *args: tuple[Any, ...], **kwargs: dict[str, Any]
+) -> None:
+    """Custom log method for handling user questions with "|| " prefix."""
+    if self.isEnabledFor(QUESTION):
+        self._log(QUESTION, message, args, **kwargs)
 
 
-# logging.Logger.question = question  # Add to logger class
+logging.Logger.question = question  # Add to logger class
 
 
 def setup_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
