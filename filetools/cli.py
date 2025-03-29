@@ -15,7 +15,7 @@ from typing import Optional
 
 import click
 
-from filetools import naming_files
+from filetools import CONFIG, naming_files
 from filetools.logger import setup_logger
 from filetools.moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
 from filetools.utils import dir_scan, make_shows_map, sort_media
@@ -81,7 +81,8 @@ def cli(
     # make/Update show_map
     make_shows_map()
 
-    work_dir = Path(path) if path else Path.cwd()
+    # work_dir = Path(path) if path else Path.cwd()
+    work_dir = Path(path) if path else CONFIG.default_source
     log.info("Path to work on: %s", work_dir)
 
     if extract_files:

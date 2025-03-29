@@ -5,6 +5,9 @@ import re
 import shutil
 import time
 from pathlib import Path
+from typing import Optional
+
+import pathspec
 
 from filetools.logger import setup_logger
 from filetools.questions import ask_bool
@@ -14,11 +17,8 @@ log = setup_logger(name="filetools", level=logging.INFO)
 
 
 def test1() -> None:
-    tv = "/media/Television"
-    # print(dir_scan(path, get_files=True))
-    # print(dir_scan(transmission))
-    # print(dir_scan(docs))
-    print(dir_scan(tv))
+    root_dir = Path(".")  # or specify your project root
+    print_directory_tree(root_dir)
 
 
 def test2() -> None:
@@ -136,3 +136,40 @@ def f(x, y, z):
     y = "test string"
     z = {"key": "value"}
     return x, y, z
+
+
+def print_directory_tree(
+    directory: Path, indent: str = "", exclude_patterns: Optional[list[str]] = None
+) -> None:
+    """Print a directory tree structure starting from the given path.
+
+    Args:
+        directory: Path object pointing to the directory to print
+        indent: String used for indentation (used recursively)
+        exclude_patterns: List of patterns to exclude (e.g. ['__pycache__', '.git'])
+    """
+    if exclude_patterns is None:
+        exclude_patterns = [
+            ".venv",
+            "__pycache__",
+            ".git",
+            ".ruff_cache",
+            ".vscode",
+        ]  # Simplified exclude list
+
+    directory = Path(directory)
+    if not directory.is_dir():
+        return
+
+    print(f"{indent}{directory.name}/")
+    indent += "    "
+
+    for path in sorted(directory.iterdir()):
+        # Skip excluded directories
+        if path.is_dir() and path.name in exclude_patterns:
+            continue
+
+        if path.is_dir():
+            print_directory_tree(path, indent, exclude_patterns)
+        else:
+            print(f"{indent}{path.name}")

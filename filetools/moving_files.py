@@ -23,8 +23,8 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 DO_NOT_DELETE = CONFIG.do_not_delete
-FILE_EXCLUDES = CONFIG.file_excludes
-FILE_IGNORES = CONFIG.file_ignores
+FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
+FILE_NAME_IGNORES = CONFIG.file_name_ignores
 FILES_TO_DELETE = CONFIG.files_to_delete
 VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
 
@@ -313,7 +313,6 @@ def _move_file(src: Path, dest: Path) -> None:
     Raises:
         OSError: If all move attempts fail
     """
-    # Try os.rename() first (fastest if on the same filesystem)
     try:
         os.rename(src, dest)
         log.info(f"Moved {src} -> {dest} using os.rename()")
@@ -321,9 +320,8 @@ def _move_file(src: Path, dest: Path) -> None:
     except OSError as e:
         if e.errno != errno.EXDEV:
             log.error(f"Failed to move {src} -> {dest} using os.rename(): {e}")
-            raise
 
-    # If os.rename() fails due to cross-filesystem move, try sendfile()
+            raise
     try:
         with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
             os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
@@ -333,7 +331,6 @@ def _move_file(src: Path, dest: Path) -> None:
     except OSError as e:
         log.error(f"Failed to move {src} -> {dest} using sendfile(): {e}")
 
-    # Final fallback: Use shutil.copyfile() and remove source manually
     try:
         shutil.copyfile(src, dest)
         os.unlink(src)  # Remove source after copying
@@ -390,7 +387,7 @@ def _process_file(file_obj: DirEntry, working_directory: Path) -> tuple[Path | N
     if file_ext in DO_NOT_DELETE:
         return None, True
     if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
-        if file_obj.name.lower() in FILE_IGNORES:
+        if file_obj.name.lower() in FILE_NAME_IGNORES:
             return None, False
         return working_directory.joinpath(file_obj.name), False
     return None, False

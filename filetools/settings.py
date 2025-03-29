@@ -1,81 +1,67 @@
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger("filetools")
 
 
 class AppConfig:
-    """Load and manage application settings from a JSON configuration file.
+    """Load and manage application settings from a JSON configuration file."""
 
-    Provides structured access to configuration settings including:
-    - File patterns for deletion/exclusion
-    - Video file extensions
-    - Year range validation
-    - Media library paths
+    # Define class-level type hints for all attributes
+    settings_path: Path
+    do_not_delete: list[str]
+    files_to_delete: list[str]
+    file_extension_excludes: list[str]
+    file_name_ignores: list[str]
+    name_cleanup_flags: list[str]
+    video_file_extensions: list[str]
+    year_min: int
+    year_max: int
+    shows: dict[str, str]
+    movies: dict[str, str]
+    music: dict[str, str]
+    default_source: str
+    _data: dict[str, Any]
 
-    Args:
-        settings_path: Path to the JSON settings file
-
-    Attributes:
-        settings_path: Path to the configuration file
-        do_not_delete: List of file patterns to never delete
-        files_to_delete: List of file patterns to delete
-        file_excludes: List of file patterns to exclude from processing
-        file_ignores: List of file patterns to ignore during processing
-        name_cleanup_flags: List of words to remove from filenames
-        video_file_extensions: List of valid video file extensions
-        year_min: Minimum valid year for media (default: 1900)
-        year_max: Maximum valid year for media (default: 3000)
-        shows: Dict mapping show library names to paths
-        movies: Dict mapping movie library names to paths
-        music: Dict mapping music library names to paths
-
-    Example JSON structure:
-        {
-            "do_not_delete": ["*.nfo", "*.srt"],
-            "files_to_delete": ["*.txt", "*.nfo"],
-            "libraries": {
-                "shows": [
-                    {"name": "main", "path": "/media/shows"}
-                ]
-            }
-        }
-    """
-
-    def __init__(self, settings_path: Path):
+    def __init__(self, settings_path: Path) -> None:
         """Initialize AppConfig with settings from JSON file.
 
         Args:
             settings_path: Path to the JSON settings file
+
+        Raises:
+            FileNotFoundError: If settings file doesn't exist
+            json.JSONDecodeError: If settings file contains invalid JSON
         """
         self.settings_path = settings_path
         self._data = self._load_settings()
 
-        # Parse file-related lists
-
+        # Parse file-related lists with explicit types
         self.do_not_delete = self._data.get("do_not_delete", [])
         self.files_to_delete = self._data.get("files_to_delete", [])
-        self.file_excludes = self._data.get("file_excludes", [])
-        self.file_ignores = self._data.get("file_ignores", [])
+        self.file_extension_excludes = self._data.get("file_extension_excludes", [])
+        self.file_name_ignores = self._data.get("file_name_ignores", [])
         self.name_cleanup_flags = self._data.get("name_cleanup_flags", [])
         self.video_file_extensions = self._data.get("video_file_extensions", [])
 
-        # Load year range from settings
-        self.year_min = self._data.get("year_min", 1900)
-        self.year_max = self._data.get("year_max", 3000)
+        # Load year range with explicit types
+        self.year_min = int(self._data.get("year_min", 1900))
+        self.year_max = int(self._data.get("year_max", 3000))
 
-        # Parse libraries
+        # Parse libraries section
         libraries = self._data.get("libraries", {})
         self.shows = {lib["name"]: lib["path"] for lib in libraries.get("shows", [])}
         self.movies = {lib["name"]: lib["path"] for lib in libraries.get("movies", [])}
         self.music = {lib["name"]: lib["path"] for lib in libraries.get("music", [])}
+        self.default_source = self._data.get("default_source", "")
 
-    def _load_settings(self) -> dict:
+    def _load_settings(self) -> dict[str, any]:
         """Load and parse the JSON settings file.
 
         Returns:
-            dict: Parsed settings data or empty dict if loading fails
+            Dict[str, any]: Parsed settings data or empty dict if loading fails
 
         Raises:
             FileNotFoundError: If settings file doesn't exist

@@ -14,7 +14,7 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXCLUDES = CONFIG.file_excludes
+FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
 VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
 NAME_CLEANUP_FLAGS = CONFIG.name_cleanup_flags  # New setting for words to remove from filenames
 
@@ -40,7 +40,7 @@ def rename_files(target_dir: Path, debug: bool = False) -> None:
             continue
 
         file_ext = os.path.splitext(file_obj.name)[1]
-        if file_ext in VIDEO_FILE_EXTENSIONS and file_ext not in FILE_EXCLUDES:
+        if file_ext in VIDEO_FILE_EXTENSIONS and file_ext not in FILE_EXT_EXCLUDES:
             try:
                 _rename(file_obj, debug)
             except Exception as e:
@@ -134,9 +134,35 @@ def _is_properly_formatted(file_name: str) -> bool:
 
     Returns:
         bool: True if filename matches either movie or show pattern
+
+    Examples of valid show names:
+        - show_name_s01e01.mkv
+        - multiple_word_show_name_s01e01.mkv
+        - word_s01e01[4k_hdr].mkv
     """
-    movie_pattern = re.compile(r"^[a-z0-9_]+_\(\d{4}\)\.[a-z0-9]+$")
-    show_pattern = re.compile(r"^[a-z0-9_]+_s\d{2,4}e\d{2,3}\.[a-z0-9]+$")
+    # Show name must be words separated by single underscores, followed by season/episode
+    show_pattern = re.compile(
+        r"""^
+        ([a-z0-9]+          # First word
+        (?:_[a-z0-9]+)*)    # Additional words, each preceded by single underscore
+        _                    # Single underscore before season/episode
+        s\d{2,4}e\d{2,3}    # Season and episode (s01e01, s2023e01, etc)
+        (?:\[[\w_]+\])?     # Optional quality flags
+        \.[a-z0-9]+         # File extension
+        $""",
+        re.VERBOSE,
+    )
+
+    # Movie name follows same word pattern but ends with year
+    movie_pattern = re.compile(
+        r"""^
+        ([a-z0-9]+          # First word
+        (?:_[a-z0-9]+)*)    # Additional words, each preceded by single underscore
+        _\(\d{4}\)          # Year in parentheses with underscore before
+        \.[a-z0-9]+         # File extension
+        $""",
+        re.VERBOSE,
+    )
 
     return bool(movie_pattern.match(file_name) or show_pattern.match(file_name))
 
@@ -196,23 +222,38 @@ def _sanitize_show_name(show_name: str) -> str:
         show_name: Original show name
 
     Returns:
-        str: Sanitized show name in lowercase with underscores
+        str: Sanitized show name in lowercase with single underscores only
     """
     sanitized_filename = show_name
+    # First remove unwanted words
     for word in NAME_CLEANUP_FLAGS:
         sanitized_filename = sanitized_filename.replace(word, "")
+
+    # Initial cleanup
     sanitized_filename = sanitized_filename.lstrip().lstrip(".").rstrip(".")
-    sanatized_filename = (
+
+    # Initial character replacements
+    sanitized_filename = (
         sanitized_filename.replace(" ", "_")
         .replace(".", "_")
         .replace("'", "")
         .replace(",", "")
         .replace("!", "")
         .replace("?", "")
+        .replace("-", "_")
         .replace("_-_", "_")
-        .rstrip()
     )
-    return sanatized_filename.lower()
+
+    # Keep cleaning up until no more changes are made
+    prev_name = ""
+    while prev_name != sanitized_filename:
+        prev_name = sanitized_filename
+        # Remove consecutive underscores
+        sanitized_filename = sanitized_filename.replace("__", "_")
+        # Remove any trailing/leading underscores
+        sanitized_filename = sanitized_filename.strip("_")
+
+    return sanitized_filename.lower()
 
 
 def _sanitize_season_episode(season_episode: str) -> str:

@@ -23,7 +23,7 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXCLUDES = CONFIG.file_excludes
+FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
 # Libraries
 MOVIE_LIBRARIES = CONFIG.movies
 SHOW_LIBRARIES = CONFIG.shows
@@ -147,6 +147,7 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
     Supports formats:
     - S##E## (e.g., S02E05)
     - S####E## (e.g., S2023E01)
+    - #x## (e.g., 1x01)
     - season 01 episode 01
     - season01 episode01
     - season01episode01
@@ -166,6 +167,11 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
         ) |
         (?:
             (?:^|[\W_])                     # Start of string or non-word boundary
+            (\d{1,2})x(\d{2})              # Matches #x## format
+            (?:$|[\W_])
+        ) |
+        (?:
+            (?:^|[\W_])                     # Start of string or non-word boundary
             season[\W_]*?(\d{2})[\W_]*?episode[\W_]*?(\d{2}) # Matches "season 01 episode 01" or variations
             (?:$|[\W_])
         ) |
@@ -177,9 +183,7 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
         """,
         re.I | re.VERBOSE,
     )
-    log.debug(f"Matching TV show filename: {filename}")
     match = pattern.search(filename)
-    log.debug(f"Match: {match}")
     if match:
         return True, match.group()
     return False, None
@@ -261,23 +265,22 @@ def normalize_tv_format(season_episode: str) -> str:
         str: Normalized format (e.g., 's01e02')
 
     Example:
-        >>> normalize_tv_format("Season 1 Episode 2")
+        >>> normalize_tv_format("1x02")
         's01e02'
     """
-    # Regex pattern to extract season and episode numbers from various formats
     pattern = re.compile(
         r"""
-        s(?P<season>\d{2,4})e(?P<episode>\d{2}) |  # Matches S##E## or S####E##
-        season\s*(?P<season2>\d{1,4})\s*episode\s*(?P<episode2>\d{1,3}) |  # Season 01 Episode 01
-        season(?P<season3>\d{1,4})\s*episode(?P<episode3>\d{1,3}) |  # Season01 Episode01
-        season(?P<season4>\d{1,4})episode(?P<episode4>\d{1,3})  # Season01Episode01
+        s(?P<season>\d{2,4})e(?P<episode>\d{2}) |
+        (?P<season2>\d{1,2})x(?P<episode2>\d{2}) |
+        season\s*(?P<season3>\d{1,4})\s*episode\s*(?P<episode3>\d{1,3}) |
+        season(?P<season4>\d{1,4})\s*episode(?P<episode4>\d{1,3}) |
+        season(?P<season5>\d{1,4})episode(?P<episode5>\d{1,3})
         """,
         re.I | re.VERBOSE,
     )
 
     match = pattern.search(season_episode)
     if match:
-        # Extract season and episode dynamically instead of hardcoding
         season = next(
             (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)), None
         )
@@ -303,14 +306,14 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
 
     Notes:
         - Deletes files matching patterns in CONFIG.files_to_delete
-        - Excludes files matching patterns in CONFIG.file_excludes
+        - Excludes files matching patterns in CONFIG.FILE_EXT_EXCLUDES
         - Only processes files with extensions in CONFIG.video_file_extensions
     """
     movies = []
     shows = []
 
     files_to_delete = set(CONFIG.files_to_delete)
-    file_excludes = set(CONFIG.file_excludes)
+    FILE_EXT_EXCLUDES = set(CONFIG.FILE_EXT_EXCLUDES)
     valid_extensions = set(CONFIG.video_file_extensions)
 
     for file_obj in files_obj:
@@ -329,7 +332,7 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
                 log.warning(f"Failed to delete {file_path}: {e}")
             continue
 
-        if _should_exclude(file_name, file_excludes):
+        if _should_exclude(file_name, FILE_EXT_EXCLUDES):
             log.debug(f"Skipping excluded file: {file_path}")
             continue
 
@@ -372,14 +375,14 @@ def _should_delete(file_name: str, files_to_delete: set) -> bool:
     return any(delete_item in file_name for delete_item in files_to_delete)
 
 
-def _should_exclude(file_name: str, file_excludes: set) -> bool:
+def _should_exclude(file_name: str, FILE_EXT_EXCLUDES: set) -> bool:
     """Check if file should be excluded from processing.
 
     Args:
         file_name: Name of file to check
-        file_excludes: Set of patterns indicating files to exclude
+        FILE_EXT_EXCLUDES: Set of patterns indicating files to exclude
 
     Returns:
         bool: True if file matches any exclusion pattern
     """
-    return any(exclude_item in file_name for exclude_item in file_excludes)
+    return any(exclude_item in file_name for exclude_item in FILE_EXT_EXCLUDES)
