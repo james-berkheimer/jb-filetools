@@ -23,7 +23,7 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
+FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
 # Libraries
 MOVIE_LIBRARIES = CONFIG.movies
 SHOW_LIBRARIES = CONFIG.shows

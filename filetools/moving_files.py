@@ -23,7 +23,7 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 DO_NOT_DELETE = CONFIG.do_not_delete
-FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
+FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
 FILE_NAME_IGNORES = CONFIG.file_name_ignores
 FILES_TO_DELETE = CONFIG.files_to_delete
 VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions

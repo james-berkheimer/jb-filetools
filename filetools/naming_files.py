@@ -14,7 +14,7 @@ log = logging.getLogger("filetools")
 # Globals
 # --------------------------------------------------------------------------------
 FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXT_EXCLUDES = CONFIG.FILE_EXT_EXCLUDES
+FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
 VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
 NAME_CLEANUP_FLAGS = CONFIG.name_cleanup_flags  # New setting for words to remove from filenames
 
