@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Optional
 
 log = logging.getLogger("filetools")
@@ -107,7 +108,11 @@ def ask_text_input(qstring: str) -> str:
         qstring: Question prompt to display
 
     Returns:
-        str: User's response converted to lowercase with spaces replaced by underscores
+        str: User's response:
+            - converted to lowercase
+            - leading/trailing whitespace removed
+            - internal spaces replaced by single underscores
+            - empty string if no input provided
 
     Example:
         >>> ask_text_input("Enter show name")
@@ -115,7 +120,7 @@ def ask_text_input(qstring: str) -> str:
         'the_office'
     """
     question = qstring + "? "
-    # Use logger for the question
     log.question(question)
-    answer = input("|| ")
-    return answer.replace(" ", "_").lower()
+    answer = input("|| ").strip()  # Strip leading/trailing whitespace
+    # Replace one or more spaces with single underscore
+    return re.sub(r"\s+", "_", answer).lower()
