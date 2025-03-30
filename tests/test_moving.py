@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from filetools import moving_files
 from filetools.moving_files import (
     _build_movie_destination,
     _build_show_destination,
@@ -112,91 +113,63 @@ def test_move_file_all_methods_fail(temp_file, tmp_path, monkeypatch):
         _move_file(temp_file, dest)
 
 
-def test_get_files_to_extract(temp_media_dir, mock_config):
-    """Test extracting files from working directory."""
-    # Create test directory structure
+def test_get_files_to_extract_skips_if_part_present(temp_media_dir, mock_config):
+    """Test that extraction is skipped when a .part file is present."""
     source_dir = temp_media_dir / "source"
     test_dir = source_dir / "test_dir"
     test_dir.mkdir(parents=True)
 
-    # Create test files in subdirectory
-    test_files = [
-        "show.s01e01.mkv",
-        "movie.2023.mkv",
-        "ignore.txt",
-        "Sample.mkv",
-        "test.part",
-    ]
+    # Create .part file
+    (test_dir / "test.part").touch()
+    (test_dir / "movie.2023.mkv").touch()
 
-    for filename in test_files:
-        file_path = test_dir / filename
-        file_path.touch()
-        assert file_path.exists(), f"Failed to create {file_path}"
-        print(f"Created test file: {file_path}")
-
-    # Mock _process_file
     with patch("filetools.moving_files._process_file") as mock_process:
-        processed_files = set()
 
         def side_effect(file_obj, working_dir):
-            print(f"\nProcess file called with: {file_obj.name}")
-            processed_files.add(file_obj.name)
-
-            # Return (dest_path, is_downloading)
             if file_obj.name.endswith(".part"):
-                print("  Returning do_not_delete file")
-                return None, True  # This will stop processing the directory
-            if file_obj.name.endswith(".mkv") and file_obj.name not in ["Sample.mkv", "Trailer.mkv"]:
-                dest = working_dir / file_obj.name
-                print(f"  Returning valid file: ({file_obj.path}, {dest})")
-                return Path(file_obj.path), dest
-            print("  Returning ignored file")
-            return None, False
+                return None, True
+            return Path(file_obj.path), working_dir / file_obj.name
 
         mock_process.side_effect = side_effect
-
-        print("\nDirectory structure:")
-        print(f"Root dir: {source_dir}")
-        for path in source_dir.rglob("*"):
-            print(f"  {path.relative_to(source_dir)}")
-
         result = _get_files_to_extract(source_dir)
 
-        print("\nProcessing Summary:")
-        print(f"Files processed: {sorted(processed_files)}")
-        print(f"Files missed: {sorted(set(test_files) - processed_files)}")
-        print(f"\nResult dictionary: {result}")
+    assert result == {}, "Should skip extracting when .part file is present"
 
-    # Expect empty result because test.part indicates downloading
-    assert result == {}, "Should return empty dict when .part file is present"
 
-    # Create a new directory without .part files for positive test
-    test_dir2 = source_dir / "test_dir2"
-    test_dir2.mkdir()
-    valid_files = ["show.s01e01.mkv", "movie.2023.mkv"]
+def test_get_files_to_extract_only_valid_files(temp_media_dir, mock_config):
+    source_dir = temp_media_dir / "source"
+    test_dir = source_dir / "test_dir"
+    test_dir.mkdir(parents=True)
 
+    valid_files = ["show.s01e01.mkv", "movie.2023.mkv", "ignore.txt", "Sample.mkv"]
     for filename in valid_files:
-        file_path = test_dir2 / filename
-        file_path.touch()
+        (test_dir / filename).touch()
 
-    # Test again with only valid files
     with patch("filetools.moving_files._process_file") as mock_process:
 
-        def side_effect(file_obj, working_dir):
-            if file_obj.name.endswith(".mkv"):
-                source_path = str(test_dir2 / file_obj.name)  # Convert to string
-                dest_path = str(source_dir / file_obj.name)  # Convert to string
-                return source_path, dest_path
+        def process_side_effect(file_obj, working_dir):
+            name = file_obj.name
+            if name.endswith(".mkv") and "sample" not in name.lower():
+                return file_obj.path, False
             return None, False
 
-        mock_process.side_effect = side_effect
+        mock_process.side_effect = process_side_effect
         result = _get_files_to_extract(source_dir)
 
-        # Convert expected paths to strings to match actual result
-        expected = {str(test_dir2 / f): str(source_dir / f) for f in valid_files}
+    expected = {
+        str(test_dir / "show.s01e01.mkv"): str(test_dir / "show.s01e01.mkv"),
+        str(test_dir / "movie.2023.mkv"): str(test_dir / "movie.2023.mkv"),
+    }
 
-        print("\nSecond test:")
-        print(f"Result: {result}")
-        print(f"Expected: {expected}")
+    assert result == expected, "Should extract only valid video files"
 
-        assert result == expected, "Should extract valid files when no .part files present"
+
+@patch("filetools.moving_files.ask_multichoice")
+def test_choose_library_provides_expected_choices(mock_ask):
+    libraries = {"LibraryOne": "/path/one", "LibraryTwo": "/path/two"}
+    mock_ask.return_value = "LibraryOne"
+
+    result = _choose_library(libraries, "Pick one:")
+
+    assert result == Path("/path/one")
+    mock_ask.assert_called_once_with(["LibraryOne", "LibraryTwo"], "Pick one:")
