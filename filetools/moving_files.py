@@ -22,15 +22,6 @@ log = logging.getLogger("filetools")
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-DO_NOT_DELETE = CONFIG.do_not_delete
-FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
-FILE_NAME_IGNORES = CONFIG.file_name_ignores
-FILES_TO_DELETE = CONFIG.files_to_delete
-VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
-
-MOVIE_LIBRARIES = CONFIG.movies
-SHOW_LIBRARIES = CONFIG.shows
-MUSIC_LIBRARIES = CONFIG.music
 
 # --------------------------------------------------------------------------------
 # Public Functions
@@ -150,7 +141,7 @@ def _build_movie_destination(movie_path: Path) -> Path | None:
                      or None if no valid library is selected or found.
     """
     log.debug(f"Processing movie: {movie_path}")
-    library_path = _choose_library(MOVIE_LIBRARIES, "Select a movie library:")
+    library_path = _choose_library(CONFIG.movies, "Select a movie library:")
     filename_without_extension = movie_path.stem
     cleaned_filename = filename_without_extension.replace("-4K", "").replace("-hdr", "")
     log.debug(f"Using library: {library_path}")
@@ -243,10 +234,10 @@ def _get_empty_dirs(working_directory: Path) -> list[Path]:
         delete = True
         for file_obj in dir_scan(dir_obj.path, True):
             _, file_ext = os.path.splitext(file_obj.name)
-            if file_ext in DO_NOT_DELETE:
+            if file_ext in CONFIG.do_not_delete:
                 delete = False
                 break
-            if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
+            if any(x in file_ext for x in CONFIG.video_file_extensions):
                 if "sample" in file_obj.name.lower() or "trailer" in file_obj.name.lower():
                     continue
                 delete = False
@@ -384,10 +375,10 @@ def _process_file(file_obj: DirEntry, working_directory: Path) -> tuple[Path | N
                whether the file should not be deleted (True) or can be deleted (False).
     """
     _, file_ext = os.path.splitext(file_obj.name)
-    if file_ext in DO_NOT_DELETE:
+    if file_ext in CONFIG.do_not_delete:
         return None, True
-    if any(x in file_ext for x in VIDEO_FILE_EXTENSIONS):
-        if file_obj.name.lower() in FILE_NAME_IGNORES:
+    if any(x in file_ext for x in CONFIG.video_file_extensions):
+        if file_obj.name.lower() in CONFIG.file_name_ignores:
             return None, False
         return working_directory.joinpath(file_obj.name), False
     return None, False
@@ -403,8 +394,9 @@ def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Pat
         return None
 
     choice = ask_multichoice(["Television", "Documentaries"])
-    if choice in SHOW_LIBRARIES:
-        base_library_path = Path(SHOW_LIBRARIES[choice])
+    show_libraries = CONFIG.shows
+    if choice in show_libraries:
+        base_library_path = Path(show_libraries[choice])
     else:
         log.warning(f"{choice} not found in SHOW_LIBRARIES, defaulting to /media/Television.")
         base_library_path = Path("/media/Television")

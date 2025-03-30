@@ -19,13 +19,15 @@ dependencies = ["click>=8.1.3", "colorlog>=6.4.1"]
 
 [project.scripts]
 filetools = "filetools.cli:main"
-test1 = "filetools._scratch:test1"
-test2 = "filetools._scratch:test2"
-test3 = "filetools._scratch:test3"
-test4 = "filetools._scratch:test4"
-
 [tool.hatch.build]
 targets = { wheel = {} }
+
+[tool.hatch.envs.dev.scripts]
+test = "coverage run -m pytest && coverage report"
+test1 = "python -m filetools._scratch test1"
+test2 = "python -m filetools._scratch test2"
+test3 = "python -m filetools._scratch test3"
+test4 = "python -m filetools._scratch test4"
 
 [project.optional-dependencies]
 dev = [

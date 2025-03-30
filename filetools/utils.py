@@ -22,13 +22,6 @@ log = logging.getLogger("filetools")
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
-# Libraries
-MOVIE_LIBRARIES = CONFIG.movies
-SHOW_LIBRARIES = CONFIG.shows
-MUSIC_LIBRARIES = CONFIG.music
-
 
 # --------------------------------------------------------------------------------
 # Public API
@@ -231,9 +224,10 @@ def make_shows_map() -> None:
         Another Show = /path/to/library/network/another_show
     """
     config = configparser.ConfigParser()
+    show_libraries = CONFIG.shows
     shows_dict = {}
 
-    for _, library_path in SHOW_LIBRARIES.items():
+    for _, library_path in show_libraries.items():
         lib_path = Path(library_path)
         if not lib_path.is_dir():
             log.warning(f"Show library path does not exist: {lib_path}")
@@ -313,7 +307,7 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
     shows = []
 
     files_to_delete = set(CONFIG.files_to_delete)
-    FILE_EXT_EXCLUDES = set(CONFIG.FILE_EXT_EXCLUDES)
+    file_ext_excludes = set(CONFIG.file_extension_excludes)
     valid_extensions = set(CONFIG.video_file_extensions)
 
     for file_obj in files_obj:
@@ -332,7 +326,7 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
                 log.warning(f"Failed to delete {file_path}: {e}")
             continue
 
-        if _should_exclude(file_name, FILE_EXT_EXCLUDES):
+        if _should_exclude(file_name, file_ext_excludes):
             log.debug(f"Skipping excluded file: {file_path}")
             continue
 
@@ -375,7 +369,7 @@ def _should_delete(file_name: str, files_to_delete: set) -> bool:
     return any(delete_item in file_name for delete_item in files_to_delete)
 
 
-def _should_exclude(file_name: str, FILE_EXT_EXCLUDES: set) -> bool:
+def _should_exclude(file_name: str, file_ext_excludes: set) -> bool:
     """Check if file should be excluded from processing.
 
     Args:
@@ -385,4 +379,4 @@ def _should_exclude(file_name: str, FILE_EXT_EXCLUDES: set) -> bool:
     Returns:
         bool: True if file matches any exclusion pattern
     """
-    return any(exclude_item in file_name for exclude_item in FILE_EXT_EXCLUDES)
+    return any(exclude_item in file_name for exclude_item in file_ext_excludes)

@@ -13,10 +13,6 @@ log = logging.getLogger("filetools")
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
-FILES_TO_DELETE = CONFIG.files_to_delete
-FILE_EXT_EXCLUDES = CONFIG.file_extension_excludes
-VIDEO_FILE_EXTENSIONS = CONFIG.video_file_extensions
-NAME_CLEANUP_FLAGS = CONFIG.name_cleanup_flags  # New setting for words to remove from filenames
 
 # --------------------------------------------------------------------------------
 # Public Functions
@@ -39,8 +35,11 @@ def rename_files(target_dir: Path, debug: bool = False) -> None:
             os.remove(file_obj.path)
             continue
 
+        file_ext_excludes = CONFIG.file_extension_excludes
+        video_file_extensions = CONFIG.video_file_extensions
+
         file_ext = os.path.splitext(file_obj.name)[1]
-        if file_ext in VIDEO_FILE_EXTENSIONS and file_ext not in FILE_EXT_EXCLUDES:
+        if file_ext in video_file_extensions and file_ext not in file_ext_excludes:
             try:
                 _rename(file_obj, debug)
             except Exception as e:
@@ -147,7 +146,7 @@ def _is_properly_formatted(file_name: str) -> bool:
         (?:_[a-z0-9]+)*)    # Additional words, each preceded by single underscore
         _                    # Single underscore before season/episode
         s\d{2,4}e\d{2,3}    # Season and episode (s01e01, s2023e01, etc)
-        (?:\[[\w_]+\])?     # Optional quality flags
+        (?:_\[[\w_]+\])?    # Optional quality flags with leading underscore
         \.[a-z0-9]+         # File extension
         $""",
         re.VERBOSE,
@@ -225,8 +224,9 @@ def _sanitize_show_name(show_name: str) -> str:
         str: Sanitized show name in lowercase with single underscores only
     """
     sanitized_filename = show_name
+    name_cleanup_flags = CONFIG.name_cleanup_flags
     # First remove unwanted words
-    for word in NAME_CLEANUP_FLAGS:
+    for word in name_cleanup_flags:
         sanitized_filename = sanitized_filename.replace(word, "")
 
     # Initial cleanup
@@ -265,16 +265,16 @@ def _sanitize_season_episode(season_episode: str) -> str:
     Returns:
         str: Clean season/episode string (e.g. 's01e01')
     """
-    return season_episode.replace(".", "").replace(" ", "").replace("_", "")
+    return season_episode.lower().replace(".", "").replace(" ", "").replace("_", "")
 
 
 def _should_delete(file_name: str) -> bool:
-    """Check if file should be deleted based on configured patterns.
+    """Check if file matches exactly any filename in the deletion list.
 
     Args:
         file_name: Name of file to check
 
     Returns:
-        bool: True if file matches any deletion patterns
+        bool: True if file name matches exactly any name in files_to_delete
     """
-    return any(flag in file_name for flag in FILES_TO_DELETE)
+    return file_name in CONFIG.files_to_delete
