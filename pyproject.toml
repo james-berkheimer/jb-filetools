@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "filetools"
-version = "0.0.0" # Placeholder or dynamic versioning
+version = "1.0.0" # Placeholder or dynamic versioning
 authors = [{ name = "James Berkheimer", email = "james.berkheimer@gmail.com" }]
 description = "A set of tools to help parse downloaded media files"
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -38,6 +38,7 @@ dev = [
     "coverage>=6.0",
     "hatchling>=1.0",
     "python-dotenv>=0.19",
+    "toml>=0.10.2",
 ]
 
 [tool.hatch.version]

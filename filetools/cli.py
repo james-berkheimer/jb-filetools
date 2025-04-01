@@ -17,7 +17,12 @@ import click
 
 from filetools import CONFIG, naming_files
 from filetools.logger import setup_logger
-from filetools.moving_files import clean_empty_dirs, extract_from_src, move_movie_files, move_show_files
+from filetools.moving_files import (
+    clean_empty_dirs,
+    extract_from_src,
+    move_movie_files,
+    move_show_files,
+)
 from filetools.utils import dir_scan, make_shows_map, sort_media
 
 
@@ -41,11 +46,19 @@ from filetools.utils import dir_scan, make_shows_map, sort_media
     help="Deletes all subdirectories that don't hold a specified video file",
 )
 @click.option(
-    "-d", "--debug", is_flag=True, help="Run in debug mode: Log actions without renaming or moving files"
+    "-d",
+    "--debug",
+    is_flag=True,
+    help="Run in debug mode: Log actions without renaming or moving files",
 )
-@click.option("-v", "--verbose", count=True, help="Increase verbosity level (use -v, -vv, or -vvv)")
+@click.option(
+    "-v",
+    "--verbose",
+    count=True,
+    help="Increase verbosity level (use -v, -vv, or -vvv)",
+)
 def cli(
-    path: Optional[str],
+    path: str | None,
     extract_files: bool,
     rename_files: bool,
     move_files: bool,

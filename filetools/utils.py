@@ -28,7 +28,7 @@ log = logging.getLogger("filetools")
 # --------------------------------------------------------------------------------
 
 
-def dir_scan(scan_path: Union[str, Path], get_files: bool = False) -> list[os.DirEntry]:
+def dir_scan(scan_path: str | Path, get_files: bool = False) -> list[os.DirEntry]:
     """Scan a directory and return a list of sorted entries.
 
     Args:
@@ -59,11 +59,13 @@ def dir_scan(scan_path: Union[str, Path], get_files: bool = False) -> list[os.Di
         with os.scandir(scan_path) as scan_obj:
             if get_files:
                 scan_output = sorted(
-                    [entry for entry in scan_obj if entry.is_file()], key=lambda e: e.name
+                    [entry for entry in scan_obj if entry.is_file()],
+                    key=lambda e: e.name,
                 )
             else:
                 scan_output = sorted(
-                    [entry for entry in scan_obj if entry.is_dir()], key=lambda e: e.name
+                    [entry for entry in scan_obj if entry.is_dir()],
+                    key=lambda e: e.name,
                 )
 
     except PermissionError:
@@ -276,10 +278,12 @@ def normalize_tv_format(season_episode: str) -> str:
     match = pattern.search(season_episode)
     if match:
         season = next(
-            (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)), None
+            (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)),
+            None,
         )
         episode = next(
-            (match.group(g) for g in match.groupdict() if "episode" in g and match.group(g)), None
+            (match.group(g) for g in match.groupdict() if "episode" in g and match.group(g)),
+            None,
         )
 
         if season and episode:

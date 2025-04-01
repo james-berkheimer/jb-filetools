@@ -6,7 +6,7 @@ A collection of tools built on Python 3.10 used to help manage downloaded files 
 
 # INSTALLATION
     Simple install in any convinent file location.  Run with a Python call i.e. python jb-filetools/src/filetools/main.py
-    
+
     Future versions will use a distribution format and be callable on it's own.
 
 # Options
@@ -19,8 +19,3 @@ A collection of tools built on Python 3.10 used to help manage downloaded files 
     -ded, --delete-empty-dirs   Deletes all subdirectories that don't hold a specified video file.
     -mc, --make-config          Prints out the config.ini.
     -fn, --fix-names            Fix file names to match them to the show maps.
-    
-
-
-
-

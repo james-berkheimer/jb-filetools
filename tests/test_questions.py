@@ -102,7 +102,10 @@ class TestAskTextInput:
             ("Simple Text", "simple_text"),
             ("UPPER CASE", "upper_case"),
             ("no spaces", "no_spaces"),
-            ("   extra spaces   ", "extra_spaces"),  # Should strip spaces before conversion
+            (
+                "   extra spaces   ",
+                "extra_spaces",
+            ),  # Should strip spaces before conversion
             ("multiple   spaces", "multiple_spaces"),  # Should collapse multiple spaces
             ("", ""),  # Empty input case
         ],

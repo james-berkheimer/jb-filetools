@@ -25,7 +25,7 @@ class AppConfig:
     default_source: str
     _data: dict[str, Any]
 
-    def __init__(self, settings_path: Path) -> None:
+    def __init__(self: "AppConfig", settings_path: Path) -> None:
         """Initialize AppConfig with settings from JSON file.
 
         Args:
@@ -57,7 +57,7 @@ class AppConfig:
         self.music = {lib["name"]: lib["path"] for lib in libraries.get("music", [])}
         self.default_source = self._data.get("default_source", "")
 
-    def _load_settings(self) -> dict[str, any]:
+    def _load_settings(self: "AppConfig") -> dict[str, any]:
         """Load and parse the JSON settings file.
 
         Returns:

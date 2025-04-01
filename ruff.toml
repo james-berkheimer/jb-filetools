@@ -1,7 +1,7 @@
 # Basic configuration
 line-length = 105
 indent-width = 4
-target-version = "py39"
+target-version = "py312"
 fix = true
 unsafe-fixes = true
 
@@ -36,7 +36,9 @@ exclude = [
     "vendor",
     "generated",
     "_redunant/",
+    "filetools/_scratch.py",
 ]
+
 
 [lint]
 select = [
@@ -74,7 +76,12 @@ ignore = [
     "F841",   # Local variable is assigned to but never used
 ]
 
+# Fix settings
 fixable = ["ALL"]
+unfixable = ["Q000", "F401"]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 # Per-file ignore settings
 [lint.per-file-ignores]
@@ -82,15 +89,12 @@ fixable = ["ALL"]
 "__init__.py" = ["F401"]
 "examples/*" = ["D", "ANN"]
 
-# Documentation style settings
 [lint.pydocstyle]
 convention = "google"
 
-# Complexity settings
 [lint.mccabe]
-max-complexity = 12
+max-complexity = 10
 
-# Import sorting configuration
 [lint.isort]
 known-first-party = ["jb_filetools"]
 section-order = [
@@ -102,19 +106,17 @@ section-order = [
 ]
 combine-as-imports = true
 
-# Type annotation settings
 [lint.flake8-annotations]
 mypy-init-return = true
 suppress-none-returning = false
 
-# Pycodestyle specific settings
 [lint.pycodestyle]
 max-doc-length = 120
 
-# Formatting settings
 [format]
 quote-style = "double"
 indent-style = "space"
+line-ending = "auto"
 skip-magic-trailing-comma = false
 docstring-code-format = true
 docstring-code-line-length = 80

@@ -20,7 +20,7 @@ def question(
 logging.Logger.question = question  # Add to logger class
 
 
-def setup_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
+def setup_logger(name: str | None = None, level: int = logging.INFO) -> logging.Logger:
     """Configure and return a logger with colored output formatting.
 
     Sets up a logger with two handlers:

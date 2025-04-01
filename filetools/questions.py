@@ -18,17 +18,22 @@ class QuestionError(Exception):
         details: Additional error context
     """
 
-    def __init__(self, message: str, question: Optional[str] = None, details: Optional[str] = None):
+    def __init__(
+        self: "QuestionError",
+        message: str,
+        question: str | None = None,
+        details: str | None = None,
+    ):
         super().__init__(message)
         self.question = question
         self.details = details
         log.error(f"QuestionError: {message} | Question: {question} | Details: {details}")
 
-    def __str__(self) -> str:
+    def __str__(self: "QuestionError") -> str:
         return f"QuestionError: {self.args[0]} | Question: {self.question} | Details: {self.details}"
 
 
-def ask_bool(question: str, default_value: Optional[bool] = None) -> Optional[bool]:
+def ask_bool(question: str, default_value: bool | None = None) -> bool | None:
     """Prompt user with a yes/no question using consistent formatting.
 
     Args:

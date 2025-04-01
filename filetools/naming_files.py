@@ -166,7 +166,7 @@ def _is_properly_formatted(file_name: str) -> bool:
     return bool(movie_pattern.match(file_name) or show_pattern.match(file_name))
 
 
-def _rename(file_obj: Union[os.DirEntry, Path], debug: bool = False) -> None:
+def _rename(file_obj: os.DirEntry | Path, debug: bool = False) -> None:
     """Rename a file using standardized naming conventions.
 
     Args:

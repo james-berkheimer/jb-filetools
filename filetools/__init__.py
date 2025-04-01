@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .settings import AppConfig
+from filetools.settings import AppConfig
 
 # Global settings instance (loaded once)
 PROJECT_ROOT = Path(__file__).parent.parent

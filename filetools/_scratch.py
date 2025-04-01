@@ -179,3 +179,14 @@ def print_directory_tree(
             print_directory_tree(path, indent, exclude_patterns)
         else:
             print(f"{indent}{path.name}")
+
+
+def test_formatting(a, b) -> int:
+    if a == b:
+        print("Equal")
+    else:
+        print("Not Equal")
+
+
+def unused_function(x, y):
+    return x + y
