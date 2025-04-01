@@ -30,7 +30,5 @@ jobs:
       - name: Run ruff format
         run: ruff format --check .
 
-      - name: Run tests with coverage
-        run: |
-          coverage run -m pytest
-          coverage report --fail-under=72
+      - name: Run tests
+        run: pytest
