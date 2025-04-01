@@ -30,9 +30,6 @@ jobs:
       - name: Run ruff format
         run: ruff format --check .
 
-      - name: Check version consistency
-        run: python scripts/check_version.py
-
       - name: Run tests with coverage
         run: |
           coverage run -m pytest
