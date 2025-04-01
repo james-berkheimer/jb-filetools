@@ -73,6 +73,15 @@ pct exec $CT_ID -- git clone "$REPO_URL" "$APP_PATH"
 echo "Configuring Python environment..."
 pct exec $CT_ID -- bash -c "python${PYTHON_VERSION} -m venv $APP_PATH/venv"
 pct exec $CT_ID -- bash -c "$APP_PATH/venv/bin/pip install --upgrade pip wheel setuptools"
-pct exec $CT_ID -- bash -c "$APP_PATH/venv/bin/pip install click colorlog"
+
+# Install app from pyproject.toml
+pct exec $CT_ID -- bash -c "$APP_PATH/venv/bin/pip install $APP_PATH"
+
+# Copy user-editable settings
+pct exec $CT_ID -- mkdir -p /root/.config/filetools
+pct exec $CT_ID -- cp $APP_PATH/settings.json /root/.config/filetools/settings.json
+
+# Set FILETOOLS_SETTINGS env var for root shell
+pct exec $CT_ID -- bash -c "echo 'export FILETOOLS_SETTINGS=/root/.config/filetools/settings.json' >> /root/.bashrc"
 
 echo "Deployment complete!"

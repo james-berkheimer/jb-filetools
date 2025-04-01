@@ -56,8 +56,6 @@ pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano
 
 # Enable SSH service
 echo "Enabling and starting SSH service..."
-pct exec $CT_ID -- apt update
-pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano
 pct exec $CT_ID -- systemctl enable ssh
 pct exec $CT_ID -- systemctl restart ssh
 
@@ -75,7 +73,6 @@ pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 echo "Setting default working directory to $MOUNT_MEDIA_SRC..."
 pct exec $CT_ID -- bash -c "echo 'cd $MOUNT_MEDIA_SRC' >> /root/.bashrc"
 
-
 echo "Container setup complete."
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -90,4 +87,3 @@ echo "Inside the container, you can:"
 echo "  - Run your Filetools app"
 echo "  - Manage packages, users, or settings"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
