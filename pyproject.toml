@@ -43,3 +43,11 @@ dev = [
 
 [tool.hatch.version]
 path = "VERSION"
+
+[tool.coverage.run]
+source = ["filetools"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 72
+show_missing = true

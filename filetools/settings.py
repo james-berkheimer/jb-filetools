@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +26,7 @@ class AppConfig:
     default_source: str
     _data: dict[str, Any]
 
-    def __init__(self: "AppConfig", settings_path: Path) -> None:
+    def __init__(self: "AppConfig", settings_path: Path | None = None) -> None:
         """Initialize AppConfig with settings from JSON file.
 
         Args:
@@ -35,7 +36,14 @@ class AppConfig:
             FileNotFoundError: If settings file doesn't exist
             json.JSONDecodeError: If settings file contains invalid JSON
         """
-        self.settings_path = settings_path
+        env_path = os.getenv("FILETOOLS_CONFIG")
+        if settings_path is not None:
+            self.settings_path = settings_path
+        elif env_path:
+            self.settings_path = Path(env_path)
+        else:
+            self.settings_path = Path(__file__).resolve().parents[1] / "settings.json"
+
         self._data = self._load_settings()
 
         # Parse file-related lists with explicit types
