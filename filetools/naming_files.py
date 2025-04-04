@@ -126,19 +126,34 @@ def _get_year(target_string: str) -> str | None:
 
 
 def _is_properly_formatted(file_name: str) -> bool:
-    """Check if filename matches movie or TV show naming conventions.
+    """Check if filename matches movie or TV show naming conventions and contains no illegal words.
 
     Args:
         file_name: Name of file to check
 
     Returns:
-        bool: True if filename matches either movie or show pattern
+        bool: True if filename matches either movie or show pattern and contains no illegal words
 
     Examples of valid show names:
         - show_name_s01e01.mkv
         - multiple_word_show_name_s01e01.mkv
-        - word_s01e01[4k_hdr].mkv
+        - show_name_s01e01[4k_hdr].mkv
+
+    Examples of valid movie names:
+        - movie_name_(2023).mkv
+        - multiple_word_movie_(2023).mkv
+
+    Invalid examples:
+        - pbs_show_name_s01e01.mkv (contains illegal word 'pbs')
+        - bbc.show.name.s01e01.mkv (contains illegal word 'bbc')
+        - show.name.s01e01.mkv (uses periods instead of underscores)
+        - show_name_101.mkv (incorrect season/episode format)
     """
+    # Check for illegal words first
+    file_lower = file_name.lower()
+    if any(word.lower() in file_lower for word in CONFIG.name_cleanup_flags):
+        return False
+
     # Show name must be words separated by single underscores, followed by season/episode
     show_pattern = re.compile(
         r"""^
