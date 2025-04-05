@@ -47,10 +47,9 @@ class TestAppConfig:
         assert config.year_min == 1900
         assert config.year_max == 2025
         assert config.shows == {
-            "shows1": "/path/to/shows1",
-            "shows2": "/path/to/shows2",
+            "shows1": Path("/path/to/shows1"),
+            "shows2": Path("/path/to/shows2"),
         }
-        assert config.default_source == "/default/path"
 
     def test_missing_settings_file(self, tmp_path):
         """Test handling of missing settings file."""

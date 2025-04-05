@@ -150,15 +150,15 @@ def test_get_files_to_extract_only_valid_files(temp_media_dir, mock_config):
         def process_side_effect(file_obj, working_dir):
             name = file_obj.name
             if name.endswith(".mkv") and "sample" not in name.lower():
-                return file_obj.path, False
+                return Path(file_obj.path), False
             return None, False
 
         mock_process.side_effect = process_side_effect
         result = _get_files_to_extract(source_dir)
 
     expected = {
-        str(test_dir / "show.s01e01.mkv"): str(test_dir / "show.s01e01.mkv"),
-        str(test_dir / "movie.2023.mkv"): str(test_dir / "movie.2023.mkv"),
+        Path(test_dir / "show.s01e01.mkv"): Path(test_dir / "show.s01e01.mkv"),
+        Path(test_dir / "movie.2023.mkv"): Path(test_dir / "movie.2023.mkv"),
     }
 
     assert result == expected, "Should extract only valid video files"
