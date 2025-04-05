@@ -27,7 +27,8 @@ done
 
 # Validate mandatory variables
 : "${CT_ID:?CT_ID not set}"
-: "${CT_HOSTNAME:?CT_HOSTNAME not set}"
+: "${BRIDGE0:?BRIDGE0 not set}"
+: "${BRIDGE1:?BRIDGE1 not set}"
 : "${BRIDGE:?BRIDGE not set}"
 : "${CT_IP:?CT_IP not set}"
 : "${GATEWAY:?GATEWAY not set}"
