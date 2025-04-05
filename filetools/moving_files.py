@@ -66,17 +66,32 @@ def extract_from_src(working_directory: Path, debug: bool = False) -> None:
         working_directory: The root directory containing files to extract
         debug: If True, run in simulation mode without making actual changes
     """
-    files_to_extract = _get_files_to_extract(working_directory)
+    try:
+        working_directory = Path(working_directory)
+        if not working_directory.is_dir():
+            log.error(f"Invalid working directory: {working_directory}")
+            return
 
-    for old_path, new_path in files_to_extract.items():
-        try:
-            if not debug:
-                log.info(f"Extracting......{old_path}")
-                shutil.move(old_path, new_path)
-            else:
-                log.info(f"[Debug] Extracting......{old_path}")
-        except Exception as e:
-            log.error(f"Failed to move {old_path} to {new_path}: {e}")
+        files_to_extract = _get_files_to_extract(working_directory)
+        if not files_to_extract:
+            log.info("No files found to extract")
+            return
+
+        for src, dest in files_to_extract.items():
+            try:
+                if debug:
+                    log.info(f"[Debug] Would extract: {src} -> {dest}")
+                else:
+                    log.info(f"Extracting: {src} -> {dest}")
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    _move_file(src, dest)
+            except Exception as e:
+                log.error(f"Failed to extract {src} to {dest}: {e}")
+                continue
+
+    except Exception as e:
+        log.error(f"Extraction process failed: {e}")
+        log.debug("Error details:", exc_info=True)
 
     log.info("File extraction process completed")
 
@@ -93,15 +108,39 @@ def move_movie_files(movies: list[Path], working_directory: Path, debug: bool = 
         FileNotFoundError: If any movie files don't exist in working directory
         OSError: If creating directories or moving files fails
     """
-    files_to_move = {}
+    try:
+        working_directory = Path(working_directory)
+        if not working_directory.is_dir():
+            raise NotADirectoryError(f"Working directory does not exist: {working_directory}")
 
-    for movie in movies:
-        src = working_directory.joinpath(movie.name)
-        dest = _build_movie_destination(movie)
-        if dest:
-            files_to_move[src] = dest
+        files_to_move = {}
+        for movie in movies:
+            try:
+                movie = Path(movie)
+                src = working_directory / movie.name
 
-    _perform_moves(files_to_move, "movies", debug)
+                if not src.exists():
+                    log.error(f"Source file not found: {src}")
+                    continue
+
+                dest = _build_movie_destination(movie)
+                if dest:
+                    files_to_move[src] = dest
+
+            except Exception as e:
+                log.error(f"Error processing movie {movie}: {e}")
+                continue
+
+        if not files_to_move:
+            log.warning("No valid movies to move")
+            return
+
+        _perform_moves(files_to_move, "movies", debug)
+
+    except Exception as e:
+        log.error(f"Failed to move movie files: {e}")
+        log.debug("Error details:", exc_info=True)
+        raise
 
 
 def move_show_files(shows: list[Path], working_directory: Path, debug: bool = False) -> None:
@@ -266,6 +305,7 @@ def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
     files_to_extract = {}
 
     try:
+        working_directory = Path(working_directory)
         for dir_obj in dir_scan(working_directory):
             if _should_skip_directory(dir_obj):
                 continue
@@ -273,18 +313,28 @@ def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
             tmpdict = {}
             still_downloading = False
 
-            for file_obj in dir_scan(dir_obj.path, True):
-                new_path, downloading = _process_file(file_obj, working_directory)
-                if downloading:
-                    still_downloading = True
-                    break
-                if new_path:
-                    tmpdict[file_obj.path] = new_path
+            try:
+                for file_obj in dir_scan(dir_obj.path, True):
+                    try:
+                        new_path, downloading = _process_file(file_obj, working_directory)
+                        if downloading:
+                            still_downloading = True
+                            break
+                        if new_path:
+                            tmpdict[Path(file_obj.path)] = Path(new_path)
+                    except Exception as e:
+                        log.error(f"Error processing file {file_obj.name}: {e}")
+                        continue
 
-            if not still_downloading:
-                files_to_extract.update(tmpdict)
+                if not still_downloading:
+                    files_to_extract.update(tmpdict)
+            except Exception as e:
+                log.error(f"Error scanning directory {dir_obj.path}: {e}")
+                continue
+
     except Exception as e:
         log.error(f"An error occurred while getting files to extract: {e}")
+        log.debug("Error details:", exc_info=True)
 
     return files_to_extract
 
@@ -364,24 +414,32 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool
 
 
 def _process_file(file_obj: DirEntry, working_directory: Path) -> tuple[Path | None, bool]:
-    """Processes a file object to determine its new path based on its extension.
+    """Process a single file to determine if it should be extracted.
 
     Args:
-        file_obj (DirEntry): The DirEntry object representing the file to be processed.
-        working_directory (Path): The directory where the file should be moved if applicable.
+        file_obj: File entry to process
+        working_directory: Working directory for relative paths
 
     Returns:
-        tuple: A tuple containing the new file path (or None if not moved) and a boolean indicating
-               whether the file should not be deleted (True) or can be deleted (False).
+        tuple: (destination path or None, is_downloading flag)
     """
-    _, file_ext = os.path.splitext(file_obj.name)
-    if file_ext in CONFIG.do_not_delete:
-        return None, True
-    if any(x in file_ext for x in CONFIG.video_file_extensions):
-        if file_obj.name.lower() in CONFIG.file_name_ignores:
+    try:
+        file_path = Path(file_obj.path)
+        working_directory = Path(working_directory)
+
+        if file_obj.name.endswith(".part"):
+            return None, True
+
+        if not any(file_obj.name.endswith(ext) for ext in CONFIG.video_file_extensions):
             return None, False
-        return working_directory.joinpath(file_obj.name), False
-    return None, False
+
+        if any(file_obj.name.endswith(ext) for ext in CONFIG.file_extension_excludes):
+            return None, False
+
+        return file_path, working_directory / file_obj.name
+    except Exception as e:
+        log.error(f"Error processing file {file_obj.name}: {e}")
+        return None, False
 
 
 def _prompt_for_new_show(show_name: str, season_name: str, filename: str) -> Path | None:

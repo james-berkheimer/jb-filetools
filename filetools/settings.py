@@ -38,7 +38,7 @@ class AppConfig:
         """
         env_path = os.getenv("FILETOOLS_CONFIG")
         if settings_path is not None:
-            self.settings_path = settings_path
+            self.settings_path = Path(settings_path)
         elif env_path:
             self.settings_path = Path(env_path)
         else:
@@ -58,12 +58,15 @@ class AppConfig:
         self.year_min = int(self._data.get("year_min", 1900))
         self.year_max = int(self._data.get("year_max", 3000))
 
-        # Parse libraries section
+        # Parse libraries section and convert all paths to Path objects
         libraries = self._data.get("libraries", {})
-        self.shows = {lib["name"]: lib["path"] for lib in libraries.get("shows", [])}
-        self.movies = {lib["name"]: lib["path"] for lib in libraries.get("movies", [])}
-        self.music = {lib["name"]: lib["path"] for lib in libraries.get("music", [])}
-        self.default_source = self._data.get("default_source", "")
+        self.shows = {lib["name"]: Path(lib["path"]) for lib in libraries.get("shows", [])}
+        self.movies = {lib["name"]: Path(lib["path"]) for lib in libraries.get("movies", [])}
+        self.music = {lib["name"]: Path(lib["path"]) for lib in libraries.get("music", [])}
+
+        # Convert default_source to Path
+        default_source = self._data.get("default_source", "")
+        self.default_source = Path(default_source) if default_source else Path.cwd()
 
     def _load_settings(self: "AppConfig") -> dict[str, any]:
         """Load and parse the JSON settings file.

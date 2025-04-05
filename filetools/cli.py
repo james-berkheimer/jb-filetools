@@ -40,13 +40,13 @@ from filetools.utils import dir_scan, make_shows_map, sort_media
 @click.option("-rn", "--rename-files", is_flag=True, help="Rename files to standardized formats")
 @click.option("-m", "--move-files", is_flag=True, help="Moves renamed files to the filesystem")
 @click.option(
-    "-ded",
+    "-d",
     "--delete-empty-dirs",
     is_flag=True,
     help="Deletes all subdirectories that don't hold a specified video file",
 )
 @click.option(
-    "-d",
+    "-dbg",
     "--debug",
     is_flag=True,
     help="Run in debug mode: Log actions without renaming or moving files",
@@ -95,7 +95,14 @@ def cli(
     make_shows_map()
 
     # work_dir = Path(path) if path else Path.cwd()
-    work_dir = Path(path) if path else CONFIG.default_source
+    try:
+        work_dir = Path(path) if path else Path(CONFIG.default_source)
+        if not work_dir.exists():
+            log.error(f"Working directory does not exist: {work_dir}")
+            sys.exit(1)
+    except Exception as e:
+        log.error(f"Error setting working directory: {e}")
+        sys.exit(1)
     log.info("Path to work on: %s", work_dir)
 
     if extract_files:
