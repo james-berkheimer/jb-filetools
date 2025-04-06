@@ -32,6 +32,23 @@ pct create $CT_ID $TEMPLATE \
     --ostype ubuntu \
     --nameserver "8.8.8.8"
 
+echo "=== Configuring network in container ==="
+pct exec $CT_ID -- bash -c "cat > /etc/netplan/50-cloud-init.yaml <<EOF
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses:
+        - 192.168.1.95/24
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8,8.8.4.4]
+EOF
+"
+
+pct exec $CT_ID -- netplan apply
+
 echo "=== Ensuring host directories exist ==="
 mkdir -p "$HOST_MOUNT_SRC"
 mkdir -p "$HOST_MOUNT_DEST"
