@@ -29,7 +29,8 @@ pct create $CT_ID $TEMPLATE \
     --rootfs "$CT_STORAGE" \
     --net0 name=eth0,bridge="$BRIDGE0",ip="$CT_IP0",gw="$GATEWAY" \
     --net1 name=eth1,bridge="$BRIDGE1",ip="$CT_IP1",mtu="$MTU1" \
-    --ostype ubuntu
+    --ostype ubuntu \
+    --nameserver "8.8.8.8"
 
 echo "=== Ensuring host directories exist ==="
 mkdir -p "$HOST_MOUNT_SRC"
