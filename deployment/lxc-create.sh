@@ -42,21 +42,12 @@ echo "=== Starting container $CT_ID ==="
 pct start $CT_ID
 sleep 5
 
-echo "=== Configuring network in container ==="
-pct exec $CT_ID -- bash -c "cat > /etc/netplan/50-cloud-init.yaml <<EOF
-network:
-  version: 2
-  ethernets:
-    eth0:
-      dhcp4: no
-      addresses:
-        - 192.168.1.95/24
-      gateway4: 192.168.1.1
-      nameservers:
-        addresses: [8.8.8.8,8.8.4.4]
-EOF
-"
-pct exec $CT_ID -- netplan apply
+echo "=== Configuring network in container (manual setup) ==="
+pct exec $CT_ID -- ip link set dev eth0 up
+pct exec $CT_ID -- ip addr add 192.168.1.95/24 dev eth0
+pct exec $CT_ID -- ip route add default via 192.168.1.1
+pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
+pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
 
 echo "=== Installing SSH and basic tools in container ==="
 pct exec $CT_ID -- apt update
