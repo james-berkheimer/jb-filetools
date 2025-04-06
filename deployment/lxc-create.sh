@@ -50,8 +50,14 @@ pct exec $CT_ID -- systemctl restart ssh
 echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
-echo "=== Set default working directory for root ==="
-pct exec $CT_ID -- bash -c "echo 'cd $MOUNT_MEDIA_SRC' >> /root/.bashrc"
+echo "=== Configuring useful aliases ==="
+pct exec $CT_ID -- bash -c "echo \"alias settings='nano /etc/filetools/settings.json'\" >> /root/.bashrc"
+pct exec $CT_ID -- bash -c "echo \"alias appdir='cd /opt/jb-filetools'\" >> /root/.bashrc"
+pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc"
+pct exec $CT_ID -- bash -c "echo \"alias filetools='/opt/jb-filetools/venv/bin/filetools'\" >> /root/.bashrc"
 
 echo "=== Container $CT_ID created and configured ==="
-echo "Connect: ssh root@${CT_IP0%%/*}"
+echo "➡ Connect: ssh root@${CT_IP0%%/*}"
+echo "➡ Aliases ready: settings, appdir, transdir, filetools"
+echo "=== Done ==="
+echo "=== Remember to set the root password ==="
