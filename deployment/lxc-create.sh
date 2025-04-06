@@ -13,10 +13,13 @@ source "$(dirname "$0")/env.lxc"
 
 echo "=== Checking LXC Template ==="
 pveam update
-if ! pveam list local | grep -q "ubuntu-22.04"; then
-    echo "Downloading Ubuntu 22.04 template..."
-    pveam download local ubuntu-22.04-standard_22.04-1_amd64.tar.zst
+TEMPLATE_NAME=$(basename "$TEMPLATE")
+
+if ! pveam list local | grep -q "$TEMPLATE_NAME"; then
+    echo "Downloading LXC template $TEMPLATE_NAME..."
+    pveam download local "$TEMPLATE_NAME"
 fi
+
 
 echo "=== Creating LXC container ID: $CT_ID ==="
 pct create $CT_ID $TEMPLATE \
