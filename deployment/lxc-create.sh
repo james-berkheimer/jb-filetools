@@ -5,7 +5,6 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-
 set -e
 
 # Load env
@@ -20,7 +19,6 @@ if ! pveam list local | grep -q "$TEMPLATE_NAME"; then
     pveam download local "$TEMPLATE_NAME"
 fi
 
-
 echo "=== Creating LXC container ID: $CT_ID ==="
 pct create $CT_ID $TEMPLATE \
     --hostname "$CT_HOSTNAME" \
@@ -31,6 +29,18 @@ pct create $CT_ID $TEMPLATE \
     --net1 name=eth1,bridge="$BRIDGE1",ip="$CT_IP1",mtu="$MTU1" \
     --ostype ubuntu \
     --nameserver "8.8.8.8"
+
+echo "=== Ensuring host directories exist ==="
+mkdir -p "$HOST_MOUNT_SRC"
+mkdir -p "$HOST_MOUNT_DEST"
+
+echo "=== Binding host directories into container ==="
+pct set $CT_ID -mp0 "$HOST_MOUNT_SRC,mp=$MOUNT_MEDIA_SRC"
+pct set $CT_ID -mp1 "$HOST_MOUNT_DEST,mp=$MOUNT_MEDIA_DEST"
+
+echo "=== Starting container $CT_ID ==="
+pct start $CT_ID
+sleep 5
 
 echo "=== Configuring network in container ==="
 pct exec $CT_ID -- bash -c "cat > /etc/netplan/50-cloud-init.yaml <<EOF
@@ -46,20 +56,7 @@ network:
         addresses: [8.8.8.8,8.8.4.4]
 EOF
 "
-
 pct exec $CT_ID -- netplan apply
-
-echo "=== Ensuring host directories exist ==="
-mkdir -p "$HOST_MOUNT_SRC"
-mkdir -p "$HOST_MOUNT_DEST"
-
-echo "=== Binding host directories into container ==="
-pct set $CT_ID -mp0 "$HOST_MOUNT_SRC,mp=$MOUNT_MEDIA_SRC"
-pct set $CT_ID -mp1 "$HOST_MOUNT_DEST,mp=$MOUNT_MEDIA_DEST"
-
-echo "=== Starting container $CT_ID ==="
-pct start $CT_ID
-sleep 5
 
 echo "=== Installing SSH and basic tools in container ==="
 pct exec $CT_ID -- apt update
