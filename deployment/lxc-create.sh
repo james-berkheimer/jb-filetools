@@ -72,6 +72,10 @@ pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /r
 pct exec $CT_ID -- bash -c "echo \"alias filetools='/opt/jb-filetools/venv/bin/filetools'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"export FILETOOLS_SETTINGS='/etc/filetools/settings.json'\" >> /root/.bashrc"
 
+echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
+pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
+pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
+
 echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
 echo "➡ Aliases ready: settings, appdir, transdir, filetools"
