@@ -65,7 +65,32 @@ pct exec $CT_ID -- systemctl restart ssh
 echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
+echo "=== Adding update.sh script inside container ==="
+pct exec $CT_ID -- bash -c "cat > /opt/jb-filetools/update.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo '=== Updating JB Filetools in Container ==='
+
+cd /opt/jb-filetools
+
+echo '➡ Pulling latest code from git...'
+git pull
+
+echo '➡ Upgrading pip and installing dependencies...'
+venv/bin/pip install --upgrade pip wheel setuptools
+venv/bin/pip install --upgrade .
+
+echo '✅ Update complete.'
+EOF
+"
+
+# Make the script executable
+pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
+
+
 echo "=== Configuring useful aliases ==="
+pct exec $CT_ID -- bash -c "echo \"alias update='/opt/jb-filetools/update.sh'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias settings='nano /etc/filetools/settings.json'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias appdir='cd /opt/jb-filetools'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc"
@@ -78,6 +103,6 @@ pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam
 
 echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
-echo "➡ Aliases ready: settings, appdir, transdir, filetools"
+echo "➡ Aliases ready: appdir, filetools, settings, transdir, update"
 echo "=== Done ==="
 echo "=== Remember to set the root password ==="
