@@ -94,7 +94,22 @@ EOF
 pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
 
 echo "=== Configuring useful aliases ==="
-pct exec $CT_ID -- bash -c "echo \"alias update='/opt/jb-filetools/update.sh'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"alias settings='nano /etc/filetools/settings.json'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"alias appdir='cd /opt/jb-filetools'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc_
+pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << 'EOF'
+alias update='/opt/jb-filetools/update.sh'
+alias settings='nano /etc/filetools/settings.json'
+alias appdir='cd /opt/jb-filetools'
+alias transdir='cd /mnt/transmission'
+alias filetools='/opt/jb-filetools/venv/bin/filetools'
+export FILETOOLS_SETTINGS='/etc/filetools/settings.json'
+EOF
+"
+
+echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
+pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
+pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
+
+echo "=== Container $CT_ID created and configured ==="
+echo "➡ Connect: ssh root@${CT_IP0%%/*}"
+echo "➡ Aliases ready: appdir, filetools, settings, transdir, update"
+echo "=== Done ==="
+echo "=== Remember to set the root password ==="
