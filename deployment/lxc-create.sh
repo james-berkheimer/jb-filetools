@@ -44,14 +44,14 @@ sleep 5
 
 echo "=== Configuring network in container (manual setup) ==="
 pct exec $CT_ID -- ip link set dev eth0 up
-pct exec $CT_ID -- ip addr add 192.168.1.95/24 dev eth0
-pct exec $CT_ID -- ip route add default via 192.168.1.1
+pct exec $CT_ID -- ip addr add "$CT_IP0" dev eth0
+pct exec $CT_ID -- ip route add default via "$GATEWAY"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
 
-echo "=== Installing SSH and basic tools in container ==="
+echo "=== Installing basic tools in container ==="
 pct exec $CT_ID -- apt update
-pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano
+pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano git python3-venv
 
 echo "=== Enabling SSH service ==="
 pct exec $CT_ID -- systemctl enable ssh
@@ -64,6 +64,12 @@ pct exec $CT_ID -- systemctl restart ssh
 
 echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
+
+echo "=== Cloning JB Filetools repository inside container ==="
+pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git /opt/jb-filetools
+
+echo "=== Creating virtual environment and installing dependencies ==="
+pct exec $CT_ID -- bash -c "cd /opt/jb-filetools && python3 -m venv venv && venv/bin/pip install --upgrade pip wheel setuptools && venv/bin/pip install ."
 
 echo "=== Adding update.sh script inside container ==="
 pct exec $CT_ID -- bash -c "cat > /opt/jb-filetools/update.sh << 'EOF'
@@ -85,24 +91,10 @@ echo '✅ Update complete.'
 EOF
 "
 
-# Make the script executable
 pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
-
 
 echo "=== Configuring useful aliases ==="
 pct exec $CT_ID -- bash -c "echo \"alias update='/opt/jb-filetools/update.sh'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias settings='nano /etc/filetools/settings.json'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias appdir='cd /opt/jb-filetools'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"alias filetools='/opt/jb-filetools/venv/bin/filetools'\" >> /root/.bashrc"
-pct exec $CT_ID -- bash -c "echo \"export FILETOOLS_SETTINGS='/etc/filetools/settings.json'\" >> /root/.bashrc"
-
-echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
-pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
-pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
-
-echo "=== Container $CT_ID created and configured ==="
-echo "➡ Connect: ssh root@${CT_IP0%%/*}"
-echo "➡ Aliases ready: appdir, filetools, settings, transdir, update"
-echo "=== Done ==="
-echo "=== Remember to set the root password ==="
+pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc_
