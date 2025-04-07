@@ -70,6 +70,7 @@ pct exec $CT_ID -- bash -c "echo \"alias settings='nano /etc/filetools/settings.
 pct exec $CT_ID -- bash -c "echo \"alias appdir='cd /opt/jb-filetools'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias transdir='cd /mnt/transmission'\" >> /root/.bashrc"
 pct exec $CT_ID -- bash -c "echo \"alias filetools='/opt/jb-filetools/venv/bin/filetools'\" >> /root/.bashrc"
+pct exec $CT_ID -- bash -c "echo \"export FILETOOLS_SETTINGS='/etc/filetools/settings.json'\" >> /root/.bashrc"
 
 echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
