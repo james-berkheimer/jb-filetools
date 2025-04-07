@@ -36,7 +36,7 @@ class AppConfig:
             FileNotFoundError: If settings file doesn't exist
             json.JSONDecodeError: If settings file contains invalid JSON
         """
-        env_path = os.getenv("FILETOOLS_CONFIG")
+        env_path = os.getenv("FILETOOLS_SETTINGS")
         if settings_path is not None:
             self.settings_path = Path(settings_path)
         elif env_path:
