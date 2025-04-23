@@ -4,7 +4,7 @@
   "video_file_extensions": [".mkv", ".mp4", ".mpeg", ".mpg", ".mov", ".avi"],
   "file_extension_excludes": [".part", "Sample.mkv", "sample.mkv", "Trailer.mkv", ".DS_Store"],
   "file_name_ignores": ["preview", "sample", "trailer"],
-  "name_cleanup_flags": ["bbc", "pbs", "itv", "ch4"],
+  "name_cleanup_flags": ["bbc", "pbs", "itv", "ch4", "ch5", "ng"],
   "year_min": 1900,
   "year_max": 2030,
   "libraries":
