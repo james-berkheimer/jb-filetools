@@ -7,8 +7,14 @@ fi
 
 set -e
 
-# Load env
-source "$(dirname "$0")/env.lxc"
+ENV_FILE="$(dirname "$0")/env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "❌ Missing environment file: $ENV_FILE"
+  echo "Make sure you've run: deployment/install.sh"
+  exit 1
+fi
+
+source "$ENV_FILE"
 
 echo "=== Checking LXC Template ==="
 pveam update
@@ -90,7 +96,6 @@ venv/bin/pip install --upgrade .
 echo '✅ Update complete.'
 EOF
 "
-
 pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
 
 echo "=== Configuring useful aliases ==="
