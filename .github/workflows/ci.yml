@@ -102,6 +102,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [package-deployment, version-setup]
     if: github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -118,14 +120,16 @@ jobs:
           new_version="$base.$((patch + 1))"
           echo "$new_version" > VERSION
           echo "VERSION=$new_version" >> $GITHUB_ENV
+          echo "version=$new_version" >> $GITHUB_OUTPUT
 
-      - name: Commit and push new version
+      - name: Commit and push new version and tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add VERSION
-          git commit -m "ci: bump patch version to ${{ env.VERSION }}"
-          git push
+          git commit -m "ci: bump patch version to $VERSION"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin main --follow-tags
 
   release:
     name: Upload Tarball to GitHub Release
@@ -137,9 +141,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Read updated version from file
-        run: |
-          echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
+      - name: Set VERSION from bump-version output
+        run: echo "VERSION=${{ needs.bump-version.outputs.version }}" >> $GITHUB_ENV
 
       - name: Download packaged tarball from previous job
         uses: actions/download-artifact@v4
