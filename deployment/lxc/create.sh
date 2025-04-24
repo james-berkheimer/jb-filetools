@@ -15,6 +15,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 source "$ENV_FILE"
+APP_VERSION=$(grep '^FILETOOLS_VERSION=' "$ENV_FILE" | cut -d= -f2)
 
 echo "=== Checking LXC Template ==="
 pveam update
@@ -55,9 +56,14 @@ pct exec $CT_ID -- ip route add default via "$GATEWAY"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
 
-echo "=== Installing basic tools in container ==="
-pct exec $CT_ID -- apt update
-pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano git python3-venv
+echo "=== Installing Python $PYTHON_VERSION and tools in container ==="
+pct exec $CT_ID -- bash -c "
+  apt update &&
+  apt install -y software-properties-common &&
+  add-apt-repository -y ppa:deadsnakes/ppa &&
+  apt update &&
+  apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-distutils openssh-server sudo curl vim nano git
+"
 
 echo "=== Enabling SSH service ==="
 pct exec $CT_ID -- systemctl enable ssh
@@ -77,7 +83,7 @@ pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.gi
 echo "=== Creating virtual environment and installing dependencies ==="
 pct exec $CT_ID -- bash -c "
 cd $APP_PATH &&
-python3 -m venv $VENV_PATH &&
+python${PYTHON_VERSION} -m venv $VENV_PATH &&
 $VENV_PATH/bin/pip install --upgrade pip wheel setuptools &&
 $VENV_PATH/bin/pip install .
 "
@@ -105,12 +111,13 @@ EOF
 pct exec $CT_ID -- chmod +x "$APP_PATH/update.sh"
 
 echo "=== Configuring useful aliases ==="
-pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << 'EOF'
+pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << EOF
 alias update='$APP_PATH/update.sh'
 alias settings='nano /etc/filetools/settings.json'
 alias appdir='cd $APP_PATH'
 alias transdir='cd $MOUNT_MEDIA_SRC'
 alias filetools='$VENV_PATH/bin/filetools'
+export APP_VERSION=$APP_VERSION
 export FILETOOLS_SETTINGS='/etc/filetools/settings.json'
 EOF
 "
