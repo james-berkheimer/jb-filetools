@@ -1,133 +1,183 @@
-#!/bin/bash
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deployment/lxc/**"
+      - ".github/workflows/**"
+      - "VERSION"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "VERSION"
+      - ".github/workflows/**"
+      - "**/*.py"
 
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root (sudo)"
-  exit 1
-fi
+jobs:
+  version-setup:
+    name: Parse Version Info
+    runs-on: ubuntu-latest
+    outputs:
+      PYTHON_VERSION: ${{ steps.set.outputs.PYTHON_VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-set -e
+      - name: Parse required Python version
+        id: set
+        run: |
+          PYTHON_VERSION=$(grep -Po '(?<=requires-python = ">=)\d+\.\d+' pyproject.toml)
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_OUTPUT
 
-ENV_FILE="$(dirname "$0")/env"
-if [ ! -f "$ENV_FILE" ]; then
-  echo "Missing environment file: $ENV_FILE"
-  echo "This file should have been generated from env-template during setup."
-  exit 1
-fi
+  test:
+    name: Test with Python
+    runs-on: ubuntu-latest
+    needs: version-setup
 
-source "$ENV_FILE"
-APP_VERSION=$(grep '^FILETOOLS_VERSION=' "$ENV_FILE" | cut -d= -f2)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-echo "=== Checking LXC Template ==="
-pveam update
-TEMPLATE_NAME=$(basename "$TEMPLATE")
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.version-setup.outputs.PYTHON_VERSION }}
 
-if ! pveam list local | grep -q "$TEMPLATE_NAME"; then
-    echo "Downloading LXC template $TEMPLATE_NAME..."
-    pveam download local "$TEMPLATE_NAME"
-fi
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
 
-echo "=== Creating LXC container ID: $CT_ID ==="
-pct create $CT_ID $TEMPLATE \
-    --hostname "$CT_HOSTNAME" \
-    --cores "$CORES" \
-    --memory "$RAM" \
-    --rootfs "$CT_STORAGE" \
-    --net0 name=eth0,bridge="$BRIDGE0",ip="$CT_IP0",gw="$GATEWAY" \
-    --net1 name=eth1,bridge="$BRIDGE1",ip="$CT_IP1",mtu="$MTU1" \
-    --ostype ubuntu \
-    --nameserver "8.8.8.8"
+      - name: Run ruff check
+        run: ruff check .
 
-echo "=== Ensuring host directories exist ==="
-mkdir -p "$HOST_MOUNT_SRC"
-mkdir -p "$HOST_MOUNT_DEST"
+      - name: Run ruff format
+        run: ruff format --check .
 
-echo "=== Binding host directories into container ==="
-pct set $CT_ID -mp0 "$HOST_MOUNT_SRC,mp=$MOUNT_MEDIA_SRC"
-pct set $CT_ID -mp1 "$HOST_MOUNT_DEST,mp=$MOUNT_MEDIA_DEST"
+      - name: Run tests
+        run: pytest
 
-echo "=== Starting container $CT_ID ==="
-pct start $CT_ID
-sleep 5
+  bump-version:
+    name: Bump Patch Version and Tag
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
 
-echo "=== Configuring network in container (manual setup) ==="
-pct exec $CT_ID -- ip link set dev eth0 up
-pct exec $CT_ID -- ip addr add "$CT_IP0" dev eth0
-pct exec $CT_ID -- ip route add default via "$GATEWAY"
-pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
-pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-echo "=== Installing Python $PYTHON_VERSION and tools in container ==="
-pct exec $CT_ID -- bash -c "
-  apt update &&
-  apt install -y software-properties-common &&
-  add-apt-repository -y ppa:deadsnakes/ppa &&
-  apt update &&
-  apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-distutils openssh-server sudo curl vim nano git
-"
+      - name: Read and bump patch version
+        id: bump
+        run: |
+          git fetch --tags
+          version=$(cat VERSION)
+          base="${version%.*}"
+          patch="${version##*.}"
+          new_version="$base.$((patch + 1))"
+          while git rev-parse "v$new_version" >/dev/null 2>&1; do
+            patch=$((patch + 1))
+            new_version="$base.$patch"
+          done
+          echo "$new_version" > VERSION
+          echo "VERSION=$new_version" >> $GITHUB_ENV
+          echo "version=$new_version" >> $GITHUB_OUTPUT
 
-echo "=== Enabling SSH service ==="
-pct exec $CT_ID -- systemctl enable ssh
-pct exec $CT_ID -- systemctl restart ssh
+      - name: Commit and tag version safely
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "ci: bump patch version to $VERSION"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin main --follow-tags || {
+            echo "Push failed. Rolling back tag and commit."
+            git tag -d "v$VERSION" || true
+            git reset --hard HEAD~1 || true
+          }
 
-echo "=== Configuring SSH root login ==="
-pct exec $CT_ID -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-pct exec $CT_ID -- sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-pct exec $CT_ID -- systemctl restart ssh
+  package-deployment:
+    name: Package LXC Deployment
+    runs-on: ubuntu-latest
+    needs: [bump-version, version-setup]
+    if: github.ref == 'refs/heads/main'
 
-echo "=== Setting root password ==="
-pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-echo "=== Cloning JB Filetools repository inside container ==="
-pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git "$APP_PATH"
+      - name: Patch env-template with version and Python version
+        run: |
+          sed -i "s/^PYTHON_VERSION=.*/PYTHON_VERSION=${{ needs.version-setup.outputs.PYTHON_VERSION }}/" deployment/lxc/env-template
+          if grep -q '^FILETOOLS_VERSION=' deployment/lxc/env-template; then
+            sed -i "s/^FILETOOLS_VERSION=.*/FILETOOLS_VERSION=${{ needs.bump-version.outputs.version }}/" deployment/lxc/env-template
+          else
+            echo "FILETOOLS_VERSION=${{ needs.bump-version.outputs.version }}" >> deployment/lxc/env-template
+          fi
 
-echo "=== Creating virtual environment and installing dependencies ==="
-pct exec $CT_ID -- bash -c "
-cd $APP_PATH &&
-python${PYTHON_VERSION} -m venv $VENV_PATH &&
-$VENV_PATH/bin/pip install --upgrade pip wheel setuptools &&
-$VENV_PATH/bin/pip install .
-"
+      - name: Package deployment/lxc into versioned tarball
+        run: |
+          mkdir -p deployment/packages
+          tar -czf lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz -C deployment/lxc .
 
-echo "=== Adding update.sh script inside container ==="
-pct exec $CT_ID -- bash -c "cat > $APP_PATH/update.sh << 'EOF'
-#!/bin/bash
-set -e
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lxc-deploy-${{ needs.bump-version.outputs.version }}
+          path: lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz
 
-echo '=== Updating JB Filetools in Container ==='
+  release:
+    name: Upload Tarball to GitHub Release
+    runs-on: ubuntu-latest
+    needs: [package-deployment, bump-version]
+    if: github.ref == 'refs/heads/main'
 
-cd $APP_PATH
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-echo '➡ Pulling latest code from git...'
-git pull
+      - name: Set VERSION from bump-version output
+        run: echo "VERSION=${{ needs.bump-version.outputs.version }}" >> $GITHUB_ENV
 
-echo '➡ Upgrading pip and installing dependencies...'
-$VENV_PATH/bin/pip install --upgrade pip wheel setuptools
-$VENV_PATH/bin/pip install --upgrade .
+      - name: Download packaged tarball from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: lxc-deploy-${{ env.VERSION }}
+          path: .
 
-echo '✅ Update complete.'
-EOF
-"
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }}")
+          if [ "$response" -eq 200 ]; then
+            echo "release_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_exists=false" >> $GITHUB_OUTPUT
 
-pct exec $CT_ID -- chmod +x "$APP_PATH/update.sh"
+      - name: Create or update GitHub release
+        if: steps.check_release.outputs.release_exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-echo "=== Configuring useful aliases ==="
-pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << EOF
-alias update='$APP_PATH/update.sh'
-alias settings='nano /etc/filetools/settings.json'
-alias appdir='cd $APP_PATH'
-alias transdir='cd $MOUNT_MEDIA_SRC'
-alias filetools='$VENV_PATH/bin/filetools'
-export APP_VERSION=$APP_VERSION
-export FILETOOLS_SETTINGS='/etc/filetools/settings.json'
-EOF
-"
-
-echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
-pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
-pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
-
-echo "=== Container $CT_ID created and configured ==="
-echo "➡ Connect: ssh root@${CT_IP0%%/*}"
-echo "➡ Aliases ready: appdir, filetools, settings, transdir, update"
-echo "=== Done ==="
-echo "=== Remember to set the root password ==="
+      - name: Upload tarball to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          files: lxc-deploy-${{ env.VERSION }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
