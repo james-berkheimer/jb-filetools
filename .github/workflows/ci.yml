@@ -74,22 +74,31 @@ jobs:
       - name: Read and bump patch version
         id: bump
         run: |
+          git fetch --tags
           version=$(cat VERSION)
           base="${version%.*}"
           patch="${version##*.}"
           new_version="$base.$((patch + 1))"
+          while git rev-parse "v$new_version" >/dev/null 2>&1; do
+            patch=$((patch + 1))
+            new_version="$base.$patch"
+          done
           echo "$new_version" > VERSION
           echo "VERSION=$new_version" >> $GITHUB_ENV
           echo "version=$new_version" >> $GITHUB_OUTPUT
 
-      - name: Commit and tag version
+      - name: Commit and tag version safely
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add VERSION
           git commit -m "ci: bump patch version to $VERSION"
           git tag -a "v$VERSION" -m "Release v$VERSION"
-          git push origin main --follow-tags
+          git push origin main --follow-tags || {
+            echo "Push failed. Rolling back tag and commit."
+            git tag -d "v$VERSION" || true
+            git reset --hard HEAD~1 || true
+          }
 
   package-deployment:
     name: Package LXC Deployment
