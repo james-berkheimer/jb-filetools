@@ -143,42 +143,28 @@ jobs:
       - name: Set VERSION from bump-version output
         run: echo "VERSION=${{ needs.bump-version.outputs.version }}" >> $GITHUB_ENV
 
-      - name: Check if GitHub release already exists
-        id: check_release
-        run: |
-          if gh release view v${{ env.VERSION }} >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Download packaged tarball from previous job
-        if: steps.check_release.outputs.exists == 'false'
         uses: actions/download-artifact@v4
         with:
           name: lxc-deploy-${{ env.VERSION }}
           path: .
 
-      - name: Create GitHub release
-        if: steps.check_release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: false
-          make_latest: true
+      - name: Install GitHub CLI
+        run: |
+          sudo apt update
+          sudo apt install -y gh
+
+      - name: Create GitHub release if missing
+        run: |
+          gh release view "v${VERSION}" >/dev/null 2>&1 && echo "Release already exists" || \
+          gh release create "v${VERSION}" --title "v${VERSION}" --notes "Automated release for v${VERSION}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
 
       - name: Upload tarball to release
-        if: steps.check_release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION }}
-          files: lxc-deploy-${{ env.VERSION }}.tar.gz
+        run: |
+          gh release upload "v${VERSION}" "lxc-deploy-${VERSION}.tar.gz" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
