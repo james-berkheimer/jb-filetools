@@ -143,28 +143,29 @@ jobs:
       - name: Set VERSION from bump-version output
         run: echo "VERSION=${{ needs.bump-version.outputs.version }}" >> $GITHUB_ENV
 
-      - name: Download packaged tarball from previous job
-        uses: actions/download-artifact@v4
-        with:
-          name: lxc-deploy-${{ needs.bump-version.outputs.version }}
-          path: .
-
-      - name: Check if release already exists
+      - name: Check if GitHub release already exists
         id: check_release
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ needs.bump-version.outputs.version }}")
-          echo "HTTP response code: $response"
-          if [ "$response" -eq 200 ]; then
-            echo "release_exists=true" >> $GITHUB_OUTPUT
+          if gh release view v${{ env.VERSION }} >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
           else
-            echo "release_exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create or update GitHub release
-        if: steps.check_release.outputs.release_exists == 'false'
+      - name: Download packaged tarball from previous job
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: lxc-deploy-${{ env.VERSION }}
+          path: .
+
+      - name: Create GitHub release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.bump-version.outputs.version }}
-          name: v${{ needs.bump-version.outputs.version }}
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
           draft: false
           prerelease: false
           fail_on_unmatched_files: false
@@ -173,9 +174,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tarball to release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.bump-version.outputs.version }}
-          files: lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz
+          tag_name: v${{ env.VERSION }}
+          files: lxc-deploy-${{ env.VERSION }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
