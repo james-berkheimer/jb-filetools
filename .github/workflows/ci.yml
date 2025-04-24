@@ -137,9 +137,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Read version
-        id: get_version
-        run: echo "VERSION=${{ needs.version-setup.outputs.APP_VERSION }}" >> $GITHUB_ENV
+      - name: Read updated version from file
+        run: |
+          echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
       - name: Download packaged tarball from previous job
         uses: actions/download-artifact@v4
@@ -147,14 +147,13 @@ jobs:
           name: lxc-deploy-${{ env.VERSION }}
           path: .
 
-      - name: Create or update GitHub release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: v${{ env.VERSION }}
           draft: false
           prerelease: false
-          allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
