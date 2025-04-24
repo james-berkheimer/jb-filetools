@@ -7,8 +7,15 @@ fi
 
 set -e
 
-# Load env
-source "$(dirname "$0")/env.lxc"
+ENV_FILE="$(dirname "$0")/env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Missing environment file: $ENV_FILE"
+  echo "This file should have been generated from env-template during setup."
+  exit 1
+fi
+
+source "$ENV_FILE"
+APP_VERSION=$(grep '^FILETOOLS_VERSION=' "$ENV_FILE" | cut -d= -f2)
 
 echo "=== Checking LXC Template ==="
 pveam update
@@ -49,9 +56,14 @@ pct exec $CT_ID -- ip route add default via "$GATEWAY"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
 
-echo "=== Installing basic tools in container ==="
-pct exec $CT_ID -- apt update
-pct exec $CT_ID -- apt install -y openssh-server sudo curl vim nano git python3-venv
+echo "=== Installing Python $PYTHON_VERSION and tools in container ==="
+pct exec $CT_ID -- bash -c "
+  apt update &&
+  apt install -y software-properties-common &&
+  add-apt-repository -y ppa:deadsnakes/ppa &&
+  apt update &&
+  apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-distutils openssh-server sudo curl vim nano git
+"
 
 echo "=== Enabling SSH service ==="
 pct exec $CT_ID -- systemctl enable ssh
@@ -66,40 +78,46 @@ echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
 echo "=== Cloning JB Filetools repository inside container ==="
-pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git /opt/jb-filetools
+pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git "$APP_PATH"
 
 echo "=== Creating virtual environment and installing dependencies ==="
-pct exec $CT_ID -- bash -c "cd /opt/jb-filetools && python3 -m venv venv && venv/bin/pip install --upgrade pip wheel setuptools && venv/bin/pip install ."
+pct exec $CT_ID -- bash -c "
+cd $APP_PATH &&
+python${PYTHON_VERSION} -m venv $VENV_PATH &&
+$VENV_PATH/bin/pip install --upgrade pip wheel setuptools &&
+$VENV_PATH/bin/pip install .
+"
 
 echo "=== Adding update.sh script inside container ==="
-pct exec $CT_ID -- bash -c "cat > /opt/jb-filetools/update.sh << 'EOF'
+pct exec $CT_ID -- bash -c "cat > $APP_PATH/update.sh << 'EOF'
 #!/bin/bash
 set -e
 
 echo '=== Updating JB Filetools in Container ==='
 
-cd /opt/jb-filetools
+cd $APP_PATH
 
 echo '➡ Pulling latest code from git...'
 git pull
 
 echo '➡ Upgrading pip and installing dependencies...'
-venv/bin/pip install --upgrade pip wheel setuptools
-venv/bin/pip install --upgrade .
+$VENV_PATH/bin/pip install --upgrade pip wheel setuptools
+$VENV_PATH/bin/pip install --upgrade .
 
 echo '✅ Update complete.'
 EOF
 "
 
-pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
+pct exec $CT_ID -- chmod +x "$APP_PATH/update.sh"
 
 echo "=== Configuring useful aliases ==="
-pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << 'EOF'
-alias update='/opt/jb-filetools/update.sh'
+pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << EOF
+alias update='$APP_PATH/update.sh'
 alias settings='nano /etc/filetools/settings.json'
-alias appdir='cd /opt/jb-filetools'
-alias transdir='cd /mnt/transmission'
-alias filetools='/opt/jb-filetools/venv/bin/filetools'
+alias appdir='cd $APP_PATH'
+alias transdir='cd $MOUNT_MEDIA_SRC'
+alias filetools='$VENV_PATH/bin/filetools'
+export APP_VERSION=$APP_VERSION
 export FILETOOLS_SETTINGS='/etc/filetools/settings.json'
 EOF
 "

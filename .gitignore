@@ -166,3 +166,6 @@ cython_debug/
 /src/filetools/shows_map.ini
 .vscode
 shows_map.ini
+
+# deployment
+deployment/lxc/env
