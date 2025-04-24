@@ -1,9 +1,17 @@
-name: CI
-
 on:
   push:
     branches: [main]
+    paths:
+      - "deployment/lxc/**"
+      - ".github/workflows/**"
+      - "VERSION"
+      - "pyproject.toml"
   pull_request:
+    paths:
+      - "deployment/lxc/**"
+      - ".github/workflows/**"
+      - "VERSION"
+      - "pyproject.toml"
 
 jobs:
   version-setup:
@@ -60,6 +68,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Skip if deployment files did not change
+        run: |
+          if git diff --quiet HEAD^ HEAD -- deployment/lxc; then
+            echo "No changes to deployment/lxc. Skipping package."
+            exit 0
+          fi
 
       - name: Patch env-template with version and Python version
         run: |
