@@ -38,7 +38,7 @@ bash lxc/install.sh
 
 # Step 4: Wrap up
 echo
-echo "✅ All done!"
+echo "All done!"
 source "$ENV_FILE"
 echo "You can now SSH into your container:"
 echo "  ssh root@${CT_IP0%%/*}"

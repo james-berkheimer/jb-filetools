@@ -4,7 +4,7 @@ set -e
 
 ENV_FILE="$(dirname "$0")/env"
 if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ Missing environment file: $ENV_FILE"
+  echo "Missing environment file: $ENV_FILE"
   echo "Make sure you've run: deployment/install.sh"
   exit 1
 fi
