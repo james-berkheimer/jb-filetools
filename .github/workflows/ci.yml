@@ -146,16 +146,13 @@ jobs:
       - name: Download packaged tarball from previous job
         uses: actions/download-artifact@v4
         with:
-          name: lxc-deploy-${{ env.VERSION }}
+          name: lxc-deploy-${{ needs.bump-version.outputs.version }}
           path: .
 
       - name: Check if release already exists
         id: check_release
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }}")
+          response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ needs.bump-version.outputs.version }}")
           if [ "$response" -eq 200 ]; then
             echo "release_exists=true" >> $GITHUB_OUTPUT
           else
@@ -165,8 +162,8 @@ jobs:
         if: steps.check_release.outputs.release_exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
+          tag_name: v${{ needs.bump-version.outputs.version }}
+          name: v${{ needs.bump-version.outputs.version }}
           draft: false
           prerelease: false
           fail_on_unmatched_files: false
@@ -177,7 +174,7 @@ jobs:
       - name: Upload tarball to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          files: lxc-deploy-${{ env.VERSION }}.tar.gz
+          tag_name: v${{ needs.bump-version.outputs.version }}
+          files: lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -23,9 +23,10 @@ jobs:
         with:
           node-version: 18
 
-      # Install dependencies
+      # Install dependencies without requiring package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install --no-package-lock
 
       # Run semantic-release to determine version and create release
       - name: Run semantic-release
@@ -36,11 +37,12 @@ jobs:
       # Update FILETOOLS_VERSION in env-template
       - name: Update FILETOOLS_VERSION in env-template
         run: |
-          # Parse the new version from semantic-release output
-          NEW_VERSION=$(npx semantic-release --dry-run | grep 'nextRelease.version' | cut -d '"' -f4)
-          echo "Updating FILETOOLS_VERSION to $NEW_VERSION in env-template"
-
-          # Update the FILETOOLS_VERSION in env-template
+          # Parse the new version
+          NEW_VERSION=$(npx semantic-release --dry-run | grep 'nextRelease.version' | cut -d '"' -f4 || echo "")
+          if [ -z "$NEW_VERSION" ]; then
+            echo "Error: Failed to parse nextRelease.version from semantic-release output"
+            exit 1
+          fi
           sed -i "s/^FILETOOLS_VERSION=.*/FILETOOLS_VERSION=${NEW_VERSION}/" deployment/lxc/env-template
 
       # Commit the updated env-template
@@ -50,4 +52,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add deployment/lxc/env-template
           git commit -m "ci: update FILETOOLS_VERSION to ${NEW_VERSION}"
-          git push origin main
+          git pull --rebase origin main || true
+          git push origin main || {
+            echo "Push failed. Retrying..."
+            git pull --rebase origin main
+            git push origin main
+          }
