@@ -10,7 +10,7 @@ set -e
 ENV_FILE="$(dirname "$0")/env"
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing environment file: $ENV_FILE"
-  echo "Make sure you've run: deployment/install.sh"
+  echo "This file should have been generated from env-template during setup."
   exit 1
 fi
 
@@ -72,39 +72,45 @@ echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
 echo "=== Cloning JB Filetools repository inside container ==="
-pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git /opt/jb-filetools
+pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git "$APP_PATH"
 
 echo "=== Creating virtual environment and installing dependencies ==="
-pct exec $CT_ID -- bash -c "cd /opt/jb-filetools && python3 -m venv venv && venv/bin/pip install --upgrade pip wheel setuptools && venv/bin/pip install ."
+pct exec $CT_ID -- bash -c "
+cd $APP_PATH &&
+python3 -m venv $VENV_PATH &&
+$VENV_PATH/bin/pip install --upgrade pip wheel setuptools &&
+$VENV_PATH/bin/pip install .
+"
 
 echo "=== Adding update.sh script inside container ==="
-pct exec $CT_ID -- bash -c "cat > /opt/jb-filetools/update.sh << 'EOF'
+pct exec $CT_ID -- bash -c "cat > $APP_PATH/update.sh << 'EOF'
 #!/bin/bash
 set -e
 
 echo '=== Updating JB Filetools in Container ==='
 
-cd /opt/jb-filetools
+cd $APP_PATH
 
 echo '➡ Pulling latest code from git...'
 git pull
 
 echo '➡ Upgrading pip and installing dependencies...'
-venv/bin/pip install --upgrade pip wheel setuptools
-venv/bin/pip install --upgrade .
+$VENV_PATH/bin/pip install --upgrade pip wheel setuptools
+$VENV_PATH/bin/pip install --upgrade .
 
 echo '✅ Update complete.'
 EOF
 "
-pct exec $CT_ID -- chmod +x /opt/jb-filetools/update.sh
+
+pct exec $CT_ID -- chmod +x "$APP_PATH/update.sh"
 
 echo "=== Configuring useful aliases ==="
 pct exec $CT_ID -- bash -c "cat >> /root/.bashrc << 'EOF'
-alias update='/opt/jb-filetools/update.sh'
+alias update='$APP_PATH/update.sh'
 alias settings='nano /etc/filetools/settings.json'
-alias appdir='cd /opt/jb-filetools'
-alias transdir='cd /mnt/transmission'
-alias filetools='/opt/jb-filetools/venv/bin/filetools'
+alias appdir='cd $APP_PATH'
+alias transdir='cd $MOUNT_MEDIA_SRC'
+alias filetools='$VENV_PATH/bin/filetools'
 export FILETOOLS_SETTINGS='/etc/filetools/settings.json'
 EOF
 "
