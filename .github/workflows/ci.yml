@@ -140,13 +140,15 @@ jobs:
           name: lxc-deploy-${{ env.VERSION }}
           path: .
 
-      - name: Create GitHub release
+      - name: Create or update GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: v${{ env.VERSION }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
