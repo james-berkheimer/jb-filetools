@@ -33,7 +33,13 @@ Then rename it:
 mv env-template env
 ```
 
-### 4. Run the installer
+### 4. Make sure scripts are executable
+
+```bash
+chmod +x create.sh update.sh
+```
+
+### 5. Run the installer
 
 ```bash
 sudo ./create.sh

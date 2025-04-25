@@ -20,6 +20,10 @@ CT_ID=120
 
 CT_HOSTNAME=jb-filetools
 
+# Storage location
+
+CT_STORAGE=local-lvm:8
+
 # CPU and RAM limits
 
 CORES=2
@@ -72,7 +76,7 @@ VENV_PATH=/opt/jb-filetools/venv
 
 # LXC image template to use (must be available locally or downloadable)
 
-TEMPLATE=local:ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+TEMPLATE=local:vztmpl/ubuntu-24.04-standard_24.04-2_amd64.tar.zst
 
 # -----------------------
 
