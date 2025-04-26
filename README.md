@@ -10,8 +10,6 @@ To install and run `jb-filetools` in an LXC container:
 
 ### 1. Download the deployment scripts
 
-Replace the version tag below with the latest release (e.g. `v0.1.1`):
-
 ```bash
 curl -L https://github.com/james-berkheimer/jb-filetools/releases/latest/download/lxc-deploy.tar.gz | tar xz
 cd ~/jb-filetools-deploy
