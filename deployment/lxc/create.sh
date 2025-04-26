@@ -81,14 +81,15 @@ pct exec $CT_ID -- bash -c "
   $VENV_PATH/bin/pip install --upgrade pip setuptools wheel
 "
 
-echo "=== Downloading JB Filetools wheel ==="
+echo "=== Downloading JB Filetools v$FILETOOLS_VERSION wheel ==="
 pct exec $CT_ID -- bash -c "
-  curl -fL -o /tmp/filetools-latest-py3-none-any.whl https://github.com/james-berkheimer/jb-filetools/releases/latest/download/filetools-latest-py3-none-any.whl
+  curl -fL -o /tmp/filetools-${FILETOOLS_VERSION}-py3-none-any.whl \
+    https://github.com/james-berkheimer/jb-filetools/releases/download/v${FILETOOLS_VERSION}/filetools-${FILETOOLS_VERSION}-py3-none-any.whl
 "
 
 echo "=== Installing JB Filetools ==="
 pct exec $CT_ID -- bash -c "
-  $VENV_PATH/bin/pip install /tmp/filetools-latest-py3-none-any.whl
+  $VENV_PATH/bin/pip install /tmp/filetools-${FILETOOLS_VERSION}-py3-none-any.whl
 "
 
 echo "=== Cleaning up temporary files ==="
@@ -97,7 +98,7 @@ pct exec $CT_ID -- bash -c "rm -f /tmp/filetools-*.whl"
 echo "=== Verifying filetools installation ==="
 pct exec $CT_ID -- bash -c "$VENV_PATH/bin/filetools --help"
 
-echo "=== Setting up .bashrc ==="
+echo "=== Setting up .bashrc and .bash_aliases ==="
 pct exec $CT_ID -- bash -c "cat > /root/.bashrc << 'EOF'
 # ~/.bashrc: executed by bash(1) for non-login shells.
 [ -z \"\$PS1\" ] && return
@@ -143,7 +144,6 @@ export GREP_COLOR='1;32'
 EOF
 "
 
-echo "=== Creating .bash_aliases ==="
 pct exec $CT_ID -- bash -c "cat > /root/.bash_aliases << 'EOF'
 # ~/.bash_aliases
 alias sbash='source .bashrc'
@@ -177,4 +177,3 @@ echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
 echo "➡ Aliases ready: appdir, filetools, settings, transdir, update"
 echo "=== Done ==="
-echo "=== Remember to set the root password ==="

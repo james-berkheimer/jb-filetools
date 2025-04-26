@@ -11,14 +11,15 @@ source "$ENV_FILE"
 
 echo "=== Updating JB Filetools in Container ==="
 
-echo "➡ Downloading latest wheel from GitHub Releases..."
+echo "➡ Downloading JB Filetools v$FILETOOLS_VERSION wheel..."
 pct exec "$CT_ID" -- bash -c "
-  curl -fL -o /tmp/filetools-latest-py3-none-any.whl https://github.com/james-berkheimer/jb-filetools/releases/latest/download/filetools-latest-py3-none-any.whl
+  curl -fL -o /tmp/filetools-${FILETOOLS_VERSION}-py3-none-any.whl \
+    https://github.com/james-berkheimer/jb-filetools/releases/download/v${FILETOOLS_VERSION}/filetools-${FILETOOLS_VERSION}-py3-none-any.whl
 "
 
 echo "➡ Installing updated wheel..."
 pct exec "$CT_ID" -- bash -c "
-  $VENV_PATH/bin/pip install --upgrade /tmp/filetools-latest-py3-none-any.whl
+  $VENV_PATH/bin/pip install --upgrade /tmp/filetools-${FILETOOLS_VERSION}-py3-none-any.whl
 "
 
 echo "➡ Cleaning up temporary files..."

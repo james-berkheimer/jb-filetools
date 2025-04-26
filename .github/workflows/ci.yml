@@ -124,16 +124,11 @@ jobs:
         run: |
           python -m hatchling build
 
-      - name: Create "latest" wheel copy
-        run: |
-          latest_wheel_name="filetools-latest-py3-none-any.whl"
-          cp dist/*.whl dist/$latest_wheel_name
-
-      - name: Upload wheel artifacts
+      - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
           name: filetools-wheel
-          path: dist/
+          path: dist/*.whl
 
   package-deployment:
     name: Package LXC Deployment
@@ -190,7 +185,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: filetools-wheel
-          path: filetools-wheel
+          path: .
 
       - name: Install GitHub CLI
         run: |
