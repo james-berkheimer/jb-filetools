@@ -22,7 +22,7 @@ filetools = "filetools.cli:main"
 
 [tool.hatch.build]
 [tool.hatch.build.targets.wheel]
-include = ["settings.json"]
+include = ["settings.json", "filetools"]
 
 [tool.hatch.envs.dev.scripts]
 test = "coverage run -m pytest && coverage report"
