@@ -110,6 +110,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Re-sync with latest pushed bump
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
