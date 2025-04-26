@@ -119,16 +119,18 @@ jobs:
             echo "FILETOOLS_VERSION=${{ needs.bump-version.outputs.version }}" >> deployment/lxc/env-template
           fi
 
-      - name: Package deployment/lxc into versioned tarball
+      - name: Package deployment/lxc into non-versioned tarball
         run: |
           mkdir -p deployment/packages
-          tar -czf lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz -C deployment/lxc .
+          mkdir -p staging/jb-filetools-deploy
+          cp -r deployment/lxc/* staging/jb-filetools-deploy/
+          tar -czf lxc-deploy.tar.gz -C staging jb-filetools-deploy
 
       - name: Upload packaged artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lxc-deploy-${{ needs.bump-version.outputs.version }}
-          path: lxc-deploy-${{ needs.bump-version.outputs.version }}.tar.gz
+          name: lxc-deploy
+          path: lxc-deploy.tar.gz
 
   release:
     name: Upload Tarball to GitHub Release
@@ -146,7 +148,7 @@ jobs:
       - name: Download packaged tarball from previous job
         uses: actions/download-artifact@v4
         with:
-          name: lxc-deploy-${{ env.VERSION }}
+          name: lxc-deploy
           path: .
 
       - name: Install GitHub CLI
@@ -164,7 +166,7 @@ jobs:
 
       - name: Upload tarball to release
         run: |
-          gh release upload "v${VERSION}" "lxc-deploy-${VERSION}.tar.gz" --clobber
+          gh release upload "v${VERSION}" "lxc-deploy.tar.gz" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ env.VERSION }}

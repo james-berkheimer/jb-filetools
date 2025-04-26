@@ -20,7 +20,7 @@ cd ~/jb-filetools-deploy
 Replace the version tag below with the latest release (e.g. `v0.1.1`):
 
 ```bash
-curl -L https://github.com/james-berkheimer/jb-filetools/releases/download/v0.1.1/lxc-deploy-0.1.1.tar.gz | tar xz
+curl -L https://github.com/james-berkheimer/jb-filetools/releases/latest/download/lxc-deploy.tar.gz | tar xz
 ```
 
 ### 3. Configure environment
