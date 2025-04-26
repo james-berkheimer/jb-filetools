@@ -8,22 +8,16 @@ A collection of lightweight tools for managing and organizing files across media
 
 To install and run `jb-filetools` in an LXC container:
 
-### 1. Create a directory for deployment
-
-```bash
-mkdir -p ~/jb-filetools-deploy
-cd ~/jb-filetools-deploy
-```
-
-### 2. Download the deployment scripts
+### 1. Download the deployment scripts
 
 Replace the version tag below with the latest release (e.g. `v0.1.1`):
 
 ```bash
 curl -L https://github.com/james-berkheimer/jb-filetools/releases/latest/download/lxc-deploy.tar.gz | tar xz
+cd ~/jb-filetools-deploy
 ```
 
-### 3. Configure environment
+### 2. Configure environment
 
 Open `env-template` and adjust paths, networking, and settings for your Proxmox node.
 
@@ -31,15 +25,16 @@ Then rename it:
 
 ```bash
 mv env-template env
+sudo nano env
 ```
 
-### 4. Make sure scripts are executable
+### 3. Make sure scripts are executable
 
 ```bash
 chmod +x create.sh update.sh
 ```
 
-### 5. Run the installer
+### 4. Run the installer
 
 ```bash
 sudo ./create.sh
