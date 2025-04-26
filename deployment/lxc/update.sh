@@ -9,30 +9,22 @@ fi
 
 source "$ENV_FILE"
 
-echo "=== Checking current JB Filetools version ==="
-LOCAL_VERSION=$(pct exec "$CT_ID" -- bash -c "cat $APP_PATH/VERSION")
-REMOTE_VERSION=$(git ls-remote https://github.com/james-berkheimer/jb-filetools.git HEAD | cut -f1)
+echo "=== Updating JB Filetools in Container ==="
 
-echo "➡ Local version: $LOCAL_VERSION"
-echo "➡ Remote commit: ${REMOTE_VERSION:0:7}"
+echo "➡ Downloading latest wheel from GitHub Releases..."
+pct exec "$CT_ID" -- bash -c "
+  curl -fL -o /tmp/filetools-latest-py3-none-any.whl https://github.com/james-berkheimer/jb-filetools/releases/latest/download/filetools-latest-py3-none-any.whl
+"
 
-# Check if repo is behind remote
-NEEDS_UPDATE=$(pct exec "$CT_ID" -- bash -c "
-  cd $APP_PATH &&
-  LOCAL_COMMIT=\$(git rev-parse HEAD) &&
-  [ \"\$LOCAL_COMMIT\" != \"$REMOTE_VERSION\" ] && echo yes || echo no
-")
+echo "➡ Installing updated wheel..."
+pct exec "$CT_ID" -- bash -c "
+  $VENV_PATH/bin/pip install --upgrade /tmp/filetools-latest-py3-none-any.whl
+"
 
-if [ "$NEEDS_UPDATE" != "yes" ]; then
-  echo "Already up to date. No action taken."
-  exit 0
-fi
+echo "➡ Cleaning up temporary files..."
+pct exec "$CT_ID" -- bash -c "rm -f /tmp/filetools-*.whl"
 
-echo "⬇ Pulling latest code..."
-pct exec "$CT_ID" -- bash -c "cd $APP_PATH && git pull"
+echo "➡ Verifying filetools installation..."
+pct exec "$CT_ID" -- bash -c "$VENV_PATH/bin/filetools --help"
 
-echo "⬆ Updating Python dependencies..."
-pct exec "$CT_ID" -- bash -c "$VENV_PATH/bin/pip install --upgrade pip wheel setuptools"
-pct exec "$CT_ID" -- bash -c "$VENV_PATH/bin/pip install --upgrade $APP_PATH"
-
-echo "JB Filetools updated to latest version."
+echo "✅ JB Filetools successfully updated."

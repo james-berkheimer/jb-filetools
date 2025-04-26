@@ -10,7 +10,6 @@ set -e
 ENV_FILE="$(dirname "$0")/env"
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing environment file: $ENV_FILE"
-  echo "This file should have been generated from env-template during setup."
   exit 1
 fi
 
@@ -21,20 +20,20 @@ pveam update
 TEMPLATE_NAME="$TEMPLATE"
 
 if ! pveam list local | grep -q "$TEMPLATE_NAME"; then
-    echo "Downloading LXC template $TEMPLATE_NAME..."
-    pveam download local "$TEMPLATE_NAME"
+  echo "Downloading LXC template $TEMPLATE_NAME..."
+  pveam download local "$TEMPLATE_NAME"
 fi
 
 echo "=== Creating LXC container ID: $CT_ID ==="
 pct create $CT_ID $TEMPLATE \
-    --hostname "$CT_HOSTNAME" \
-    --cores "$CORES" \
-    --memory "$RAM" \
-    --rootfs "$CT_STORAGE" \
-    --net0 name=eth0,bridge="$BRIDGE0",ip="$CT_IP0",gw="$GATEWAY" \
-    --net1 name=eth1,bridge="$BRIDGE1",ip="$CT_IP1",mtu="$MTU1" \
-    --ostype ubuntu \
-    --nameserver "8.8.8.8"
+  --hostname "$CT_HOSTNAME" \
+  --cores "$CORES" \
+  --memory "$RAM" \
+  --rootfs "$CT_STORAGE" \
+  --net0 name=eth0,bridge="$BRIDGE0",ip="$CT_IP0",gw="$GATEWAY" \
+  --net1 name=eth1,bridge="$BRIDGE1",ip="$CT_IP1",mtu="$MTU1" \
+  --ostype ubuntu \
+  --nameserver "8.8.8.8"
 
 echo "=== Ensuring host directories exist ==="
 mkdir -p "$HOST_MOUNT_SRC"
@@ -48,14 +47,14 @@ echo "=== Starting container $CT_ID ==="
 pct start $CT_ID
 sleep 5
 
-echo "=== Configuring network in container (manual setup) ==="
+echo "=== Configuring network in container ==="
 pct exec $CT_ID -- ip link set dev eth0 up
 pct exec $CT_ID -- ip addr add "$CT_IP0" dev eth0
 pct exec $CT_ID -- ip route add default via "$GATEWAY"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 pct exec $CT_ID -- bash -c "echo 'nameserver 8.8.4.4' >> /etc/resolv.conf"
 
-echo "=== Installing Python $PYTHON_VERSION and tools in container ==="
+echo "=== Installing Python $PYTHON_VERSION and tools ==="
 pct exec $CT_ID -- bash -c "
   apt update &&
   apt install -y software-properties-common &&
@@ -64,7 +63,7 @@ pct exec $CT_ID -- bash -c "
   apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python3-pip openssh-server sudo curl vim nano git
 "
 
-echo "=== Enabling SSH service ==="
+echo "=== Enabling SSH ==="
 pct exec $CT_ID -- systemctl enable ssh
 pct exec $CT_ID -- systemctl restart ssh
 
@@ -76,40 +75,29 @@ pct exec $CT_ID -- systemctl restart ssh
 echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
-echo "=== Cloning JB Filetools repository inside container ==="
-pct exec $CT_ID -- git clone https://github.com/james-berkheimer/jb-filetools.git "$APP_PATH"
-
-echo "=== Creating virtual environment and installing dependencies ==="
+echo "=== Creating virtual environment ==="
 pct exec $CT_ID -- bash -c "
-cd $APP_PATH &&
-python${PYTHON_VERSION} -m venv $VENV_PATH &&
-$VENV_PATH/bin/pip install --upgrade pip setuptools wheel &&
-$VENV_PATH/bin/pip install .
+  python${PYTHON_VERSION} -m venv $VENV_PATH &&
+  $VENV_PATH/bin/pip install --upgrade pip setuptools wheel
 "
 
-echo "=== Adding update.sh script inside container ==="
-pct exec $CT_ID -- bash -c "cat > $APP_PATH/update.sh << 'EOF'
-#!/bin/bash
-set -e
-
-echo '=== Updating JB Filetools in Container ==='
-
-cd $APP_PATH
-
-echo '➡ Pulling latest code from git...'
-git pull
-
-echo '➡ Upgrading pip and installing dependencies...'
-$VENV_PATH/bin/pip install --upgrade pip wheel setuptools
-$VENV_PATH/bin/pip install --upgrade .
-
-echo '✅ Update complete.'
-EOF
+echo "=== Downloading JB Filetools wheel ==="
+pct exec $CT_ID -- bash -c "
+  curl -fL -o /tmp/filetools-latest-py3-none-any.whl https://github.com/james-berkheimer/jb-filetools/releases/latest/download/filetools-latest-py3-none-any.whl
 "
 
-pct exec $CT_ID -- chmod +x "$APP_PATH/update.sh"
+echo "=== Installing JB Filetools ==="
+pct exec $CT_ID -- bash -c "
+  $VENV_PATH/bin/pip install /tmp/filetools-latest-py3-none-any.whl
+"
 
-echo "=== Setting up clean .bashrc ==="
+echo "=== Cleaning up temporary files ==="
+pct exec $CT_ID -- bash -c "rm -f /tmp/filetools-*.whl"
+
+echo "=== Verifying filetools installation ==="
+pct exec $CT_ID -- bash -c "$VENV_PATH/bin/filetools --help"
+
+echo "=== Setting up .bashrc ==="
 pct exec $CT_ID -- bash -c "cat > /root/.bashrc << 'EOF'
 # ~/.bashrc: executed by bash(1) for non-login shells.
 [ -z \"\$PS1\" ] && return
@@ -177,12 +165,11 @@ alias filetools='/opt/jb-filetools/venv/bin/filetools'
 EOF
 "
 
-
 echo "=== Setting global environment variables ==="
 pct exec $CT_ID -- bash -c "echo 'FILETOOLS_SETTINGS=/opt/jb-filetools/venv/lib/python3.12/site-packages/filetools/settings.json' >> /etc/environment"
 pct exec $CT_ID -- bash -c "echo 'APP_VERSION=$APP_VERSION' >> /etc/environment"
 
-echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
+echo "=== Disabling PAM systemd session hooks ==="
 pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
 pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
 

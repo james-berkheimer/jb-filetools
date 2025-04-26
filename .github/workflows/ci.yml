@@ -100,6 +100,41 @@ jobs:
             git reset --hard HEAD~1 || true
           }
 
+  build-wheel:
+    name: Build Filetools Wheel
+    runs-on: ubuntu-latest
+    needs: [bump-version, version-setup]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.version-setup.outputs.PYTHON_VERSION }}
+
+      - name: Install hatchling
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatchling
+
+      - name: Build wheel
+        run: |
+          python -m hatchling build
+
+      - name: Create "latest" wheel copy
+        run: |
+          latest_wheel_name="filetools-latest-py3-none-any.whl"
+          cp dist/*.whl dist/$latest_wheel_name
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: filetools-wheel
+          path: dist/
+
   package-deployment:
     name: Package LXC Deployment
     runs-on: ubuntu-latest
@@ -133,9 +168,9 @@ jobs:
           path: lxc-deploy.tar.gz
 
   release:
-    name: Upload Tarball to GitHub Release
+    name: Upload Artifacts to GitHub Release
     runs-on: ubuntu-latest
-    needs: [package-deployment, bump-version]
+    needs: [package-deployment, build-wheel, bump-version]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -145,10 +180,16 @@ jobs:
       - name: Set VERSION from bump-version output
         run: echo "VERSION=${{ needs.bump-version.outputs.version }}" >> $GITHUB_ENV
 
-      - name: Download packaged tarball from previous job
+      - name: Download lxc-deploy artifact
         uses: actions/download-artifact@v4
         with:
           name: lxc-deploy
+          path: .
+
+      - name: Download filetools wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: filetools-wheel
           path: .
 
       - name: Install GitHub CLI
@@ -164,9 +205,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ env.VERSION }}
 
-      - name: Upload tarball to release
+      - name: Upload artifacts to release
         run: |
           gh release upload "v${VERSION}" "lxc-deploy.tar.gz" --clobber
+          gh release upload "v${VERSION}" "dist/*.whl" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ env.VERSION }}
