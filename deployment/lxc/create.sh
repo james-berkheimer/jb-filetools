@@ -170,15 +170,16 @@ alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 alias cls='clear'
 alias update='/opt/jb-filetools/update.sh'
-alias settings='nano /etc/filetools/settings.json'
+alias settings='nano /opt/jb-filetools/venv/lib/python3.12/site-packages/filetools/settings.json'
 alias appdir='cd /opt/jb-filetools'
 alias transdir='cd /mnt/transmission'
 alias filetools='/opt/jb-filetools/venv/bin/filetools'
 EOF
 "
 
+
 echo "=== Setting global environment variables ==="
-pct exec $CT_ID -- bash -c "echo 'FILETOOLS_SETTINGS=/etc/filetools/settings.json' >> /etc/environment"
+pct exec $CT_ID -- bash -c "echo 'FILETOOLS_SETTINGS=/opt/jb-filetools/venv/lib/python3.12/site-packages/filetools/settings.json' >> /etc/environment"
 pct exec $CT_ID -- bash -c "echo 'APP_VERSION=$APP_VERSION' >> /etc/environment"
 
 echo "=== Disabling PAM systemd session hooks to speed up SSH ==="
