@@ -57,6 +57,7 @@ from filetools.utils import dir_scan, make_shows_map, sort_media
     count=True,
     help="Increase verbosity level (use -v, -vv, or -vvv)",
 )
+@click.option("--version", is_flag=True, help="Show the version of the filetools package")
 def cli(
     path: str | None,
     extract_files: bool,
@@ -65,6 +66,7 @@ def cli(
     delete_empty_dirs: bool,
     debug: bool,
     verbose: int,
+    version: bool,
 ) -> None:
     """Process media files with various operations like extraction, renaming, and moving.
 
@@ -80,6 +82,11 @@ def cli(
     Returns:
         None
     """
+    # Show version information
+    if version:
+        click.echo(f"filetools version: {CONFIG.__version__}")
+        sys.exit(0)
+
     # Set the logging level based on the verbosity
     if verbose == 1:
         log_level = logging.DEBUG
@@ -94,7 +101,6 @@ def cli(
     # make/Update show_map
     make_shows_map()
 
-    # work_dir = Path(path) if path else Path.cwd()
     try:
         work_dir = Path(path) if path else Path(CONFIG.default_source)
         if not work_dir.exists():

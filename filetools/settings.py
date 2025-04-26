@@ -68,6 +68,9 @@ class AppConfig:
         default_source = self._data.get("default_source", "")
         self.default_source = Path(default_source) if default_source else Path.cwd()
 
+        # Load the application version
+        self.version = self._load_version()
+
     def _load_settings(self: "AppConfig") -> dict[str, any]:
         """Load and parse the JSON settings file.
 
@@ -85,3 +88,20 @@ class AppConfig:
         except (FileNotFoundError, json.JSONDecodeError) as e:
             log.warning(f"Unable to load valid settings from '{self.settings_path}'. {e}")
             return {}
+
+    def _load_version(self: "AppConfig") -> str:
+        """Load the application version from the VERSION file.
+
+        Returns:
+            str: The application version as a string.
+
+        Raises:
+            FileNotFoundError: If the VERSION file doesn't exist.
+        """
+        version_file = self.settings_path.parent / "VERSION"
+        try:
+            with open(version_file) as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            log.warning(f"VERSION file not found at {version_file}")
+            return "unknown"
