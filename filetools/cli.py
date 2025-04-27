@@ -84,7 +84,7 @@ def cli(
     """
     # Show version information
     if version:
-        click.echo(f"filetools version: {CONFIG.__version__}")
+        click.echo(f"filetools version: {CONFIG.version}")
         sys.exit(0)
 
     # Set the logging level based on the verbosity

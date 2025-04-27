@@ -46,10 +46,10 @@ def mock_config(tmp_path):  # Add tmp_path parameter here
     """Mock configuration values for testing."""
     with patch("filetools.moving_files.CONFIG") as mock_cfg:
         # File filtering settings
-        mock_cfg.video_file_extensions = [".mkv"]
+        mock_cfg.valid_file_extensions = [".mkv"]
         mock_cfg.do_not_delete = [".part"]
         mock_cfg.files_to_delete = ["Sample.mkv", "Trailer.mkv"]
-        mock_cfg.file_extension_excludes = [".part", "Sample.mkv"]
+        mock_cfg.file_excludes = [".part", "Sample.mkv"]
         mock_cfg.file_name_ignores = ["sample", "trailer"]
 
         # Library paths

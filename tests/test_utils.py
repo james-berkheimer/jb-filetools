@@ -135,15 +135,15 @@ class TestSortMedia:
     def mock_config(self):
         return {
             "files_to_delete": ["sample", "trailer"],
-            "file_extension_excludes": [".nfo", ".txt"],
-            "video_file_extensions": [".mp4", ".mkv"],
+            "file_excludes": [".nfo", ".txt"],
+            "valid_file_extensions": [".mp4", ".mkv"],
         }
 
     def test_sort_media(self, mock_dir_entry, mock_config):
         with patch("filetools.utils.CONFIG") as mock_cfg:
             mock_cfg.files_to_delete = mock_config["files_to_delete"]
-            mock_cfg.file_extension_excludes = mock_config["file_extension_excludes"]
-            mock_cfg.video_file_extensions = mock_config["video_file_extensions"]
+            mock_cfg.file_excludes = mock_config["file_excludes"]
+            mock_cfg.valid_file_extensions = mock_config["valid_file_extensions"]
 
             files = [
                 mock_dir_entry("movie.mp4"),

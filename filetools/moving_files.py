@@ -273,10 +273,10 @@ def _get_empty_dirs(working_directory: Path) -> list[Path]:
         delete = True
         for file_obj in dir_scan(dir_obj.path, True):
             _, file_ext = os.path.splitext(file_obj.name)
-            if file_ext in CONFIG.do_not_delete:
+            if file_ext in CONFIG.downloading_indicators:
                 delete = False
                 break
-            if any(x in file_ext for x in CONFIG.video_file_extensions):
+            if any(x in file_ext for x in CONFIG.valid_extensions):
                 if "sample" in file_obj.name.lower() or "trailer" in file_obj.name.lower():
                     continue
                 delete = False
@@ -316,11 +316,13 @@ def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
             try:
                 for file_obj in dir_scan(dir_obj.path, True):
                     try:
-                        new_path, downloading = _process_file(file_obj, working_directory)
-                        if downloading:
-                            still_downloading = True
+                        log.debug(f"Processing file: {file_obj.name}")
+                        new_path, still_downloading = _process_file(file_obj, working_directory)
+                        log.debug(f"File {file_obj.name} processed: Is downloading? {still_downloading}")
+                        if still_downloading:
                             break
                         if new_path:
+                            log.debug(f"\tAdding file to extraction list: {file_obj.path} -> {new_path}")
                             tmpdict[Path(file_obj.path)] = Path(new_path)
                     except Exception as e:
                         log.error(f"Error processing file {file_obj.name}: {e}")
@@ -356,18 +358,18 @@ def _move_file(src: Path, dest: Path) -> None:
     """
     try:
         os.rename(src, dest)
-        log.info(f"Moved {src} -> {dest} using os.rename()")
+        log.debug(f"Moved {src} -> {dest}")
         return
     except OSError as e:
         if e.errno != errno.EXDEV:
-            log.error(f"Failed to move {src} -> {dest} using os.rename(): {e}")
+            log.error(f"Failed to move {src} -> {dest}: {e}")
 
             raise
     try:
         with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
             os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
         os.unlink(src)
-        log.info(f"Moved {src} -> {dest} using sendfile()")
+        log.debug(f"Moved {src} -> {dest} using sendfile()")
         return
     except OSError as e:
         log.error(f"Failed to move {src} -> {dest} using sendfile(): {e}")
@@ -375,7 +377,7 @@ def _move_file(src: Path, dest: Path) -> None:
     try:
         shutil.copyfile(src, dest)
         os.unlink(src)  # Remove source after copying
-        log.info(f"Moved {src} -> {dest} using shutil.copyfile() + unlink()")
+        log.debug(f"Moved {src} -> {dest} using shutil.copyfile() + unlink()")
     except OSError as e:
         log.error(f"Failed to move {src} -> {dest} using shutil.copyfile() + unlink(): {e}")
         raise
@@ -414,31 +416,36 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool
 
 
 def _process_file(file_obj: DirEntry, working_directory: Path) -> tuple[Path | None, bool]:
-    """Process a single file to determine if it should be extracted.
+    """Process a single file to determine if it should be extracted."""
+    filename = file_obj.name
 
-    Args:
-        file_obj: File entry to process
-        working_directory: Working directory for relative paths
-
-    Returns:
-        tuple: (destination path or None, is_downloading flag)
-    """
     try:
-        file_path = Path(file_obj.path)
-        working_directory = Path(working_directory)
-
-        if file_obj.name.endswith(".part"):
+        if any(ind in filename for ind in CONFIG.downloading_indicators):
+            log.debug(f"\tFile {filename} is still downloading.")
             return None, True
 
-        if not any(file_obj.name.endswith(ext) for ext in CONFIG.video_file_extensions):
+        _, ext = os.path.splitext(filename)
+
+        if ext not in CONFIG.valid_extensions:
+            log.debug(f"\tFile {filename} does not match valid extensions.")
             return None, False
 
-        if any(file_obj.name.endswith(ext) for ext in CONFIG.file_extension_excludes):
+        if ext in CONFIG.excluded_extensions:
+            log.debug(f"\tFile {filename} is excluded from processing.")
             return None, False
 
-        return file_path, working_directory / file_obj.name
+        if any(keyword in filename.lower() for keyword in CONFIG.ignore_keywords):
+            log.debug(f"\tFile {filename} matches ignore keywords.")
+            return None, False
+
+        log.debug(f"\tFile {filename} is valid for processing.")
+        return working_directory / filename, False
+
+    except AttributeError as e:
+        log.error(f"Invalid file object for {filename}: {e}")
+        return None, False
     except Exception as e:
-        log.error(f"Error processing file {file_obj.name}: {e}")
+        log.error(f"Error processing file {filename}: {e}")
         return None, False
 
 

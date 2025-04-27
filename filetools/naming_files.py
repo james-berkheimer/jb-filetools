@@ -30,16 +30,15 @@ def rename_files(target_dir: Path, debug: bool = False) -> None:
         OSError: If file operations fail
     """
     for file_obj in dir_scan(target_dir, get_files=True):
+        # Update to use correct config attribute
         if _should_delete(file_obj.name):
             log.info(f"Deleting.....{file_obj.name}")
             os.remove(file_obj.path)
             continue
 
-        file_ext_excludes = CONFIG.file_extension_excludes
-        video_file_extensions = CONFIG.video_file_extensions
-
+        # Update to use correct config attributes
         file_ext = os.path.splitext(file_obj.name)[1]
-        if file_ext in video_file_extensions and file_ext not in file_ext_excludes:
+        if file_ext in CONFIG.valid_extensions and file_ext not in CONFIG.excluded_extensions:
             try:
                 _rename(file_obj, debug)
             except Exception as e:
@@ -149,7 +148,7 @@ def _is_properly_formatted(file_name: str) -> bool:
         - show.name.s01e01.mkv (uses periods instead of underscores)
         - show_name_101.mkv (incorrect season/episode format)
     """
-    # Check for illegal words first
+    # Update to use correct config attribute
     file_lower = file_name.lower()
     if any(word.lower() in file_lower for word in CONFIG.name_cleanup_flags):
         return False
@@ -290,6 +289,7 @@ def _should_delete(file_name: str) -> bool:
         file_name: Name of file to check
 
     Returns:
-        bool: True if file name matches exactly any name in files_to_delete
+        bool: True if file matches any name or extension in deletable_extensions
     """
-    return file_name in CONFIG.files_to_delete
+    _, ext = os.path.splitext(file_name)
+    return file_name in CONFIG.deletable_extensions or ext in CONFIG.deletable_extensions

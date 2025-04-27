@@ -51,7 +51,7 @@ def dir_scan(scan_path: str | Path, get_files: bool = False) -> list[os.DirEntry
         log.warning(f"Provided path is not a directory: {scan_path}")
         return []
 
-    # log.debug(f"Scanning directory: {scan_path}, get_files: {get_files}")
+    log.debug(f"Scanning directory: {scan_path}, get_files: {get_files}")
 
     scan_output = []
 
@@ -301,14 +301,15 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
     Notes:
         - Deletes files matching patterns in CONFIG.files_to_delete
         - Excludes files matching patterns in CONFIG.FILE_EXT_EXCLUDES
-        - Only processes files with extensions in CONFIG.video_file_extensions
+        - Only processes files with extensions in CONFIG.valid_file_extensions
     """
     movies = []
     shows = []
 
-    files_to_delete = set(CONFIG.files_to_delete)
-    file_ext_excludes = set(CONFIG.file_extension_excludes)
-    valid_extensions = set(CONFIG.video_file_extensions)
+    # Update the lines to use the correct config attributes
+    files_to_delete = CONFIG.deletable_extensions
+    file_ext_excludes = CONFIG.excluded_extensions
+    valid_extensions = CONFIG.valid_extensions
 
     for file_obj in files_obj:
         file_name = file_obj.name

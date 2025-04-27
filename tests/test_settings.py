@@ -13,10 +13,10 @@ def sample_settings(tmp_path):
     settings_data = {
         "do_not_delete": [".nfo", ".jpg"],
         "files_to_delete": ["sample", "trailer"],
-        "file_extension_excludes": [".txt"],
+        "file_excludes": [".txt"],
         "file_name_ignores": ["ignore_me"],
         "name_cleanup_flags": ["clean_this"],
-        "video_file_extensions": [".mp4", ".mkv"],
+        "valid_file_extensions": [".mp4", ".mkv"],
         "year_min": 1900,
         "year_max": 2025,
         "libraries": {
@@ -43,7 +43,7 @@ class TestAppConfig:
 
         assert config.do_not_delete == [".nfo", ".jpg"]
         assert config.files_to_delete == ["sample", "trailer"]
-        assert config.video_file_extensions == [".mp4", ".mkv"]
+        assert config.valid_file_extensions == [".mp4", ".mkv"]
         assert config.year_min == 1900
         assert config.year_max == 2025
         assert config.shows == {
