@@ -3,13 +3,17 @@ set -e
 
 echo "=== Updating JB Filetools in Container ==="
 
-FILETOOLS_VERSION=$(grep -Po '^FILETOOLS_VERSION=\K.*' /etc/environment)
 VENV_PATH="/opt/jb-filetools/venv"
 
+# Get latest release version dynamically from GitHub API
+FILETOOLS_VERSION=$(curl -s https://api.github.com/repos/james-berkheimer/jb-filetools/releases/latest | grep -Po '"tag_name": "v\K[^"]+')
+
 if [ -z "$FILETOOLS_VERSION" ]; then
-  echo "Error: FILETOOLS_VERSION not set in /etc/environment"
+  echo "Error: Unable to fetch latest jb-filetools version from GitHub."
   exit 1
 fi
+
+echo "➡ Latest version detected: $FILETOOLS_VERSION"
 
 echo "➡ Downloading JB Filetools v$FILETOOLS_VERSION wheel..."
 curl -fL -o /tmp/filetools-${FILETOOLS_VERSION}-py3-none-any.whl \
