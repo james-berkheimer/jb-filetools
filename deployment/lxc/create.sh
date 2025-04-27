@@ -100,7 +100,7 @@ pct exec $CT_ID -- bash -c "$VENV_PATH/bin/filetools --help"
 
 echo "=== Installing update.sh into /opt/jb-filetools/ ==="
 pct exec $CT_ID -- bash -c "
-  cp /opt/jb-filetools/venv/lib/python3.12/site-packages/filetools/update.sh /opt/jb-filetools/update.sh &&
+  cp /opt/jb-filetools/venv/lib/python3.12/site-packages/update.sh /opt/jb-filetools/update.sh &&
   chmod +x /opt/jb-filetools/update.sh
 "
 

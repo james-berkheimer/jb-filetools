@@ -29,7 +29,7 @@ sudo nano env
 ### 3. Make sure scripts are executable
 
 ```bash
-chmod +x create.sh update.sh
+chmod +x create.sh
 ```
 
 ### 4. Run the installer
@@ -67,9 +67,9 @@ update
 
 This command is aliased to `/opt/jb-filetools/update.sh` and will:
 
-- `git pull` the latest code
-- Upgrade Python dependencies
-- Reinstall the application
+- Download the latest jb-filetools wheel from GitHub Releases
+- Install the new version into the container's virtual environment
+- Clean up temporary files
 
 ---
 
@@ -79,8 +79,7 @@ This repo includes:
 
 - Full CI pipeline with version bump, tarball packaging, and GitHub Release upload
 - Deployment scripts live in `deployment/lxc/`
-- Releases available at:
-  [https://github.com/james-berkheimer/jb-filetools/releases](https://github.com/james-berkheimer/jb-filetools/releases)
+- Releases available at: [https://github.com/james-berkheimer/jb-filetools/releases](https://github.com/james-berkheimer/jb-filetools/releases)
 
 ---
 
