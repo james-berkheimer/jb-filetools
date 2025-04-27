@@ -7,6 +7,14 @@ fi
 
 set -e
 
+ENV_FILE="$(dirname "$0")/env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Missing environment file: $ENV_FILE"
+  exit 1
+fi
+
+source "$ENV_FILE"
+
 echo "=== Checking LXC Template ==="
 pveam update
 TEMPLATE_NAME="$TEMPLATE"
