@@ -1,3 +1,4 @@
+import importlib.metadata
 import json
 import logging
 import os
@@ -85,11 +86,9 @@ class AppConfig:
             return {}
 
     def _load_version(self: "AppConfig") -> str:
-        """Load the application version from the VERSION file."""
-        version_file = self.settings_path.parent / "VERSION"
+        """Load the application version from installed package metadata."""
         try:
-            with open(version_file) as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            log.warning(f"VERSION file not found at {version_file}")
+            return importlib.metadata.version("filetools")
+        except importlib.metadata.PackageNotFoundError:
+            log.warning("Unable to load filetools package version.")
             return "unknown"
