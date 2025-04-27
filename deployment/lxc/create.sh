@@ -75,6 +75,26 @@ pct exec $CT_ID -- systemctl restart ssh
 echo "=== Setting root password ==="
 pct exec $CT_ID -- bash -c "echo root:$ROOT_PASSWORD | chpasswd"
 
+echo "=== Disabling dynamic MOTD scripts ==="
+pct exec $CT_ID -- chmod -x /etc/update-motd.d/*
+
+echo "=== Setting up custom MOTD ==="
+pct exec $CT_ID -- bash -c "cat > /etc/motd << 'EOF'
+  ______ _ _      _              _
+ |  ____(_) |    | |            | |
+ | |__   _| | ___| |_ ___   ___ | |___
+ |  __| | | |/ _ \ __/ _ \ / _ \| / __|
+ | |    | | |  __/ || (_) | (_) | \__ \\
+ |_|    |_|_|\___|\__\___/ \___/|_|___/
+
+ Welcome to JB Filetools Container
+ IP Address: 192.168.1.95
+ SSH Login: root@jb-filetools
+
+ Enjoy your stay.
+EOF
+"
+
 echo "=== Creating virtual environment ==="
 pct exec $CT_ID -- bash -c "
   python${PYTHON_VERSION} -m venv $VENV_PATH &&
