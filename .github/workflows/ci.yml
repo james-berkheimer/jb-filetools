@@ -1,17 +1,13 @@
 on:
   push:
     branches: [main]
-    paths:
-      - "deployment/lxc/**"
-      - ".github/workflows/**"
-      - "VERSION"
-      - "pyproject.toml"
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
   pull_request:
-    paths:
-      - "pyproject.toml"
-      - "VERSION"
-      - ".github/workflows/**"
-      - "**/*.py"
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
 
 jobs:
   version-setup:
