@@ -7,14 +7,6 @@ fi
 
 set -e
 
-ENV_FILE="$(dirname "$0")/env"
-if [ ! -f "$ENV_FILE" ]; then
-  echo "Missing environment file: $ENV_FILE"
-  exit 1
-fi
-
-source "$ENV_FILE"
-
 echo "=== Checking LXC Template ==="
 pveam update
 TEMPLATE_NAME="$TEMPLATE"
@@ -98,9 +90,12 @@ pct exec $CT_ID -- bash -c "rm -f /tmp/filetools-*.whl"
 echo "=== Verifying filetools installation ==="
 pct exec $CT_ID -- bash -c "$VENV_PATH/bin/filetools --help"
 
+echo "=== Copying update.sh into container ==="
+pct push $CT_ID deployment/lxc/update.sh /opt/jb-filetools/update.sh --perms 755
+
 echo "=== Setting up .bashrc and .bash_aliases ==="
 pct exec $CT_ID -- bash -c "cat > /root/.bashrc << 'EOF'
-# ~/.bashrc: executed by bash(1) for non-login shells.
+# ~/.bashrc
 [ -z \"\$PS1\" ] && return
 HISTCONTROL=ignoredups:ignorespace
 HISTSIZE=1000
@@ -167,11 +162,11 @@ EOF
 
 echo "=== Setting global environment variables ==="
 pct exec $CT_ID -- bash -c "echo 'FILETOOLS_SETTINGS=/opt/jb-filetools/venv/lib/python3.12/site-packages/filetools/settings.json' >> /etc/environment"
-pct exec $CT_ID -- bash -c "echo 'APP_VERSION=$APP_VERSION' >> /etc/environment"
+pct exec $CT_ID -- bash -c "echo 'FILETOOLS_VERSION=$FILETOOLS_VERSION' >> /etc/environment"
 
 echo "=== Disabling PAM systemd session hooks ==="
 pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
-pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
+pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session"
 
 echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
