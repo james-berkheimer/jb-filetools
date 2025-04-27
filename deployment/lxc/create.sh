@@ -177,7 +177,7 @@ pct exec $CT_ID -- bash -c "echo 'FILETOOLS_VERSION=$FILETOOLS_VERSION' >> /etc/
 
 echo "=== Disabling PAM systemd session hooks ==="
 pct exec $CT_ID -- sed -i 's/^session\s*required\s*pam_systemd\.so/#&/' /etc/pam.d/sshd
-pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session"
+pct exec $CT_ID -- sed -i 's/^session\s*optional\s*pam_systemd\.so/#&/' /etc/pam.d/common-session
 
 echo "=== Container $CT_ID created and configured ==="
 echo "➡ Connect: ssh root@${CT_IP0%%/*}"
