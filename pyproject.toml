@@ -33,7 +33,7 @@ dev = [
 
 [tool.hatch.build]
 [tool.hatch.build.targets.wheel]
-include = ["settings.json", "update.sh", "filetools"]
+include = ["settings.json", "uninstall.sh", "update.sh", "filetools"]
 
 [tool.hatch.version]
 path = "VERSION"
