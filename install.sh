@@ -56,10 +56,12 @@ echo "=== Setting up aliases ==="
 cat > /etc/profile.d/filetools.sh << 'EOF'
 export FILETOOLS_SETTINGS=/opt/jb-filetools/venv/lib/python3.*/site-packages/filetools/settings.json
 alias filetools="/opt/jb-filetools/venv/bin/filetools"
-alias update_filetools="/opt/jb-filetools/venv/bin/update.sh"
-alias uninstall_filetools="/opt/jb-filetools/venv/bin/uninstall.sh"
+alias filetools_update="/opt/jb-filetools/venv/bin/update.sh"
+alias filetools_uninstall="/opt/jb-filetools/venv/bin/uninstall.sh"
+alias filetools_settings='nano $(find /opt/jb-filetools/venv/lib/python3*/site-packages/filetools/settings.json 2>/dev/null | head -n 1)'
 EOF
 
+chmod +x /etc/profile.d/filetools.sh
 
 
 echo "=== Installation complete ==="
