@@ -237,11 +237,14 @@ def _sanitize_show_name(show_name: str) -> str:
     Returns:
         str: Sanitized show name in lowercase with single underscores only
     """
+    log.debug(f"\tshow_name: {show_name}")
     sanitized_filename = show_name
     name_cleanup_flags = CONFIG.name_cleanup_flags
     # First remove unwanted words
     for word in name_cleanup_flags:
         sanitized_filename = sanitized_filename.replace(word, "")
+
+    log.debug(f"\tsanitized_filename: {sanitized_filename}")
 
     # Initial cleanup
     sanitized_filename = sanitized_filename.lstrip().lstrip(".").rstrip(".")
