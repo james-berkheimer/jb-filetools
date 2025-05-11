@@ -341,8 +341,8 @@ def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
     return files_to_extract
 
 
-def _move_file(src: Path, dest: Path) -> None:
-    """Move a file reliably across filesystems.
+def _move_file(src: Path, dest: Path) -> float:
+    """Move a file reliably across filesystems and return elapsed time in seconds.
 
     Attempts multiple methods in order of preference:
     1. os.rename() (fastest, same filesystem)
@@ -353,31 +353,39 @@ def _move_file(src: Path, dest: Path) -> None:
         src: Source file path
         dest: Destination file path
 
+    Returns:
+        float: Time taken to perform the move in seconds
+
     Raises:
         OSError: If all move attempts fail
     """
+    import time
+
+    start = time.perf_counter()
+
     try:
         os.rename(src, dest)
-        log.debug(f"Moved {src} -> {dest}")
-        return
+        log.debug(f"Moved {src} -> {dest} using os.rename")
+        return time.perf_counter() - start
     except OSError as e:
         if e.errno != errno.EXDEV:
             log.error(f"Failed to move {src} -> {dest}: {e}")
-
             raise
+
     try:
         with open(src, "rb") as fsrc, open(dest, "wb") as fdst:
             os.sendfile(fdst.fileno(), fsrc.fileno(), 0, os.stat(src).st_size)
         os.unlink(src)
         log.debug(f"Moved {src} -> {dest} using sendfile()")
-        return
+        return time.perf_counter() - start
     except OSError as e:
         log.error(f"Failed to move {src} -> {dest} using sendfile(): {e}")
 
     try:
         shutil.copyfile(src, dest)
-        os.unlink(src)  # Remove source after copying
+        os.unlink(src)
         log.debug(f"Moved {src} -> {dest} using shutil.copyfile() + unlink()")
+        return time.perf_counter() - start
     except OSError as e:
         log.error(f"Failed to move {src} -> {dest} using shutil.copyfile() + unlink(): {e}")
         raise
@@ -408,7 +416,8 @@ def _perform_moves(files_to_move: dict[Path, Path], media_type: str, debug: bool
                 try:
                     if not debug:
                         log.info(f"Moving: {src} -> {dest}")
-                        _move_file(src, dest)
+                        elapsed = _move_file(src, dest)
+                        log.info(f"Moved in {elapsed:.3f} seconds")
                     else:
                         log.info(f"[Debug] Moving: {src} -> {dest}")
                 except Exception as e:
