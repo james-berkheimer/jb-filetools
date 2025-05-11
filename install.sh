@@ -52,17 +52,24 @@ EOF
 
 chmod +x "$INSTALL_DIR/update.sh"
 
-echo "=== Setting up aliases ==="
-cat > /etc/profile.d/filetools.sh << 'EOF'
-export FILETOOLS_SETTINGS=/opt/jb-filetools/venv/lib/python3.*/site-packages/filetools/settings.json
-alias filetools="/opt/jb-filetools/venv/bin/filetools"
-alias filetools_update="/opt/jb-filetools/venv/bin/update.sh"
-alias filetools_uninstall="/opt/jb-filetools/venv/bin/uninstall.sh"
-alias filetools_settings='nano $(find /opt/jb-filetools/venv/lib/python3*/site-packages/filetools/settings.json 2>/dev/null | head -n 1)'
+echo "=== Creating uninstall.sh ==="
+cat > "$INSTALL_DIR/uninstall.sh" << 'EOF'
+#!/bin/bash
+set -e
+echo "Uninstalling JB Filetools..."
+rm -rf /opt/jb-filetools
+rm -f /usr/local/bin/filetools
+rm -f /usr/local/bin/filetools_update
+rm -f /usr/local/bin/filetools_uninstall
+echo "JB Filetools has been removed."
 EOF
 
-chmod +x /etc/profile.d/filetools.sh
+chmod +x "$INSTALL_DIR/uninstall.sh"
 
+echo "=== Creating symlinks in /usr/local/bin ==="
+ln -sf "$VENV_PATH/bin/filetools" /usr/local/bin/filetools
+ln -sf "$INSTALL_DIR/update.sh" /usr/local/bin/filetools_update
+ln -sf "$INSTALL_DIR/uninstall.sh" /usr/local/bin/filetools_uninstall
 
 echo "=== Installation complete ==="
-echo "➡ Run 'source /etc/profile' or reboot to activate aliases"
+echo "➡ Commands available: filetools, filetools_update, filetools_uninstall"
