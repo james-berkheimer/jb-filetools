@@ -154,12 +154,23 @@ def move_show_files(shows: list[Path], working_directory: Path, debug: bool = Fa
     creates any necessary directories, and then moves the files to their new locations.
     """
     files_to_move = {}
+    rejected_shows = set()
 
     for show in shows:
         src = working_directory.joinpath(show)
+        show_name, _ = parse_filename(show.name)
+
+        # Skip if user already declined to add this show
+        if show_name in rejected_shows:
+            log.info(f"Skipping {show.name} (previously rejected show: {show_name})")
+            continue
+
         dest = _build_show_destination(show)
+
         if dest:
             files_to_move[src] = dest
+        elif show_name:
+            rejected_shows.add(show_name)
 
     _perform_moves(files_to_move, "shows", debug)
 

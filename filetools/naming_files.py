@@ -148,28 +148,26 @@ def _is_properly_formatted(file_name: str) -> bool:
         - show.name.s01e01.mkv (uses periods instead of underscores)
         - show_name_101.mkv (incorrect season/episode format)
     """
-    # Update to use correct config attribute
     file_lower = file_name.lower()
     if any(word.lower() in file_lower for word in CONFIG.name_cleanup_flags):
         return False
 
-    # Show name must be words separated by single underscores, followed by season/episode
     show_pattern = re.compile(
         r"""^
         ([a-z0-9]+          # First word
         (?:_[a-z0-9]+)*)    # Additional words, each preceded by single underscore
-        _                    # Single underscore before season/episode
-        s\d{2,4}e\d{2,3}    # Season and episode (s01e01, s2023e01, etc)
+        _                   # Single underscore before season/episode
+        s\d{2,4}e\d{2}      # Season and starting episode
+        (?:-e\d{2})?        # Optional ending episode (multi-episode support)
         (?:_\[[\w_]+\])?    # Optional quality flags with leading underscore
         \.[a-z0-9]+         # File extension
         $""",
         re.VERBOSE,
     )
 
-    # Movie name follows same word pattern but ends with year
     movie_pattern = re.compile(
         r"""^
-        ([a-z0-9]+          # First word
+        ([a-z0-9]+
         (?:_[a-z0-9]+)*)    # Additional words, each preceded by single underscore
         _\(\d{4}\)          # Year in parentheses with underscore before
         \.[a-z0-9]+         # File extension

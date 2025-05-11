@@ -139,6 +139,7 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
 
     Supports formats:
     - S##E## (e.g., S02E05)
+    - S##E##E## (e.g., S03E08E09)
     - S####E## (e.g., S2023E01)
     - #x## (e.g., 1x01)
     - season 01 episode 01
@@ -153,6 +154,9 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
     """
     pattern = re.compile(
         r"""
+        (?:
+            (?P<season>s\d{2,4})e(?P<episode_start>\d{2})e(?P<episode_end>\d{2})   # Matches S##E##E##
+        ) |
         (?:
             (?:^|[\W_])                     # Start of string or non-word boundary
             (s\d{2,4})[\W_]*e(\d{2})        # Matches S##E## or S####E##
@@ -250,21 +254,18 @@ def make_shows_map() -> None:
 
 
 def normalize_tv_format(season_episode: str) -> str:
-    """Convert various season/episode formats to standard 's##e##' format.
+    """Convert various season/episode formats to standard 's##e##' or 's##e##-e##' format.
 
     Args:
         season_episode: String containing season/episode information
 
     Returns:
-        str: Normalized format (e.g., 's01e02')
-
-    Example:
-        >>> normalize_tv_format("1x02")
-        's01e02'
+        str: Normalized format (e.g., 's01e02' or 's03e08-e09')
     """
     pattern = re.compile(
         r"""
-        s(?P<season>\d{2,4})e(?P<episode>\d{2}) |
+        (?P<season>s\d{2,4})e(?P<episode_start>\d{2})e(?P<episode_end>\d{2}) |
+        s(?P<season1>\d{2,4})e(?P<episode1>\d{2}) |
         (?P<season2>\d{1,2})x(?P<episode2>\d{2}) |
         season\s*(?P<season3>\d{1,4})\s*episode\s*(?P<episode3>\d{1,3}) |
         season(?P<season4>\d{1,4})\s*episode(?P<episode4>\d{1,3}) |
@@ -275,6 +276,10 @@ def normalize_tv_format(season_episode: str) -> str:
 
     match = pattern.search(season_episode)
     if match:
+        if match.group("season") and match.group("episode_start") and match.group("episode_end"):
+            season = match.group("season")
+            return f"{season}e{match.group('episode_start')}-e{match.group('episode_end')}"
+
         season = next(
             (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)), None
         )
