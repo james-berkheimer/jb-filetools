@@ -1,8 +1,22 @@
 {
   "file_processing": {
     "extensions": {
-      "valid": [".mkv", ".mp4", ".mpeg", ".mpg", ".mov", ".avi"],
-      "excluded": [".part", "sample.mkv", "Sample.mkv", "trailer.mkv", "Trailer.mkv", ".DS_Store"],
+      "valid": [
+        ".mkv",
+        ".mp4",
+        ".mpeg",
+        ".mpg",
+        ".mov",
+        ".avi"
+      ],
+      "excluded": [
+        ".part",
+        "sample.mkv",
+        "Sample.mkv",
+        "trailer.mkv",
+        "Trailer.mkv",
+        ".DS_Store"
+      ],
       "deletable": [
         ".DS_Store",
         "RARBG.txt",
@@ -16,8 +30,14 @@
       ]
     },
     "keywords": {
-      "downloading": [".part"],
-      "ignore": ["preview", "sample", "trailer"]
+      "downloading": [
+        ".part"
+      ],
+      "ignore": [
+        "preview",
+        "sample",
+        "trailer"
+      ]
     }
   },
   "metadata": {
@@ -26,7 +46,13 @@
       "max": 2030
     },
     "name_cleanup": {
-      "flags": ["bbc", "pbs", "itv", "ch4", "ch5", "ng"]
+      "flags": [
+        "bbc",
+        "pbs",
+        "itv",
+        "ch4",
+        "ch5"
+      ]
     }
   },
   "libraries": {
