@@ -1,10 +1,11 @@
 import errno
 import os
+from pathlib import Path
 
 import pytest
 
 from filetools import moving_files
-from filetools.moving_files import _move_file, _season_dir_name, move_show_files
+from filetools.moving_files import _episode_filename, _move_file, _season_dir_name, move_show_files
 
 
 @pytest.mark.parametrize(
@@ -65,7 +66,12 @@ def test_show_with_year_moves_into_existing_folder(library):
 
     move_show_files(shows, work)
 
-    assert sorted(p.name for p in (ludwig / "season 02").iterdir()) == [s.name for s in shows]
+    # The file is renamed to match the folder, as the rest of the season is.
+    assert sorted(p.name for p in (ludwig / "season 02").iterdir()) == [
+        "ludwig_s02e04.mkv",
+        "ludwig_s02e05.mkv",
+        "ludwig_s02e06.mkv",
+    ]
     assert list(work.iterdir()) == []
 
 
@@ -109,3 +115,24 @@ def test_ambiguous_show_is_asked_once(library, monkeypatch):
     choices = [f"{root}/nbc/shogun_1980", f"{root}/fx/shogun_2024", "Add 'shogun' as a new show", "Skip"]
     assert questions == [(choices, "Where should 'shogun' go?")]
     assert all(show.exists() for show in shows)
+
+
+@pytest.mark.parametrize(
+    ("filename", "show_name", "folder", "expected"),
+    [
+        ("lanterns_2026_s01e05.mkv", "lanterns_2026", "lanterns", "lanterns_s01e05.mkv"),
+        ("the_paper_s02e01.mkv", "the_paper", "the_paper_2025", "the_paper_2025_s02e01.mkv"),
+        ("1923_s01e06.mkv", "1923", "1923_(2022)", "1923_(2022)_s01e06.mkv"),
+        (
+            "shogun_2024_s01e10_[4k_hdr].mkv",
+            "shogun_2024",
+            "shogun_2024",
+            "shogun_2024_s01e10_[4k_hdr].mkv",
+        ),
+        ("american_dad_s22e12.mkv", "american_dad", "american_dad", "american_dad_s22e12.mkv"),
+    ],
+)
+def test_episode_filename_matches_show_folder(filename, show_name, folder, expected):
+    assert (
+        _episode_filename(filename, show_name, Path("/library/television/network") / folder) == expected
+    )
