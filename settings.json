@@ -27,6 +27,20 @@
         ".txt",
         ".jpg",
         ".vtx"
+      ],
+      "malware": [
+        ".exe",
+        ".scr",
+        ".pif",
+        ".bat",
+        ".cmd",
+        ".msi",
+        ".lnk",
+        ".vbs",
+        ".js",
+        ".ps1",
+        ".jar",
+        ".zipx"
       ]
     },
     "keywords": {

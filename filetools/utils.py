@@ -13,7 +13,6 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Union
 
 from filetools import CONFIG
 
@@ -22,6 +21,30 @@ log = logging.getLogger("filetools")
 # --------------------------------------------------------------------------------
 # Globals
 # --------------------------------------------------------------------------------
+
+# Season/episode markers. The lookbehind/lookahead require a non-alphanumeric
+# neighbour so tags like "1920x1080" or "x264" are never mistaken for "1x01".
+TV_PATTERN = re.compile(
+    r"""
+    (?<![a-z0-9])
+    (?:
+        s(?P<season>\d{1,4})[\W_]*e(?P<episode>\d{2,3})       # S01E01, S2018E01, s00e201
+        (?:(?:[-_]?e|-)(?P<episode_end>\d{2,3}))?             # S01E01E02, S01E01-E02, S01E01-02
+      |
+        (?P<x_season>\d{1,2})x(?P<x_episode>\d{2,3})          # 1x01
+      |
+        season[\W_]*(?P<long_season>\d{1,4})                  # season 01 episode 01,
+        [\W_]*episode[\W_]*(?P<long_episode>\d{1,3})          # season01episode01
+    )
+    (?![a-z0-9])
+    """,
+    re.I | re.VERBOSE,
+)
+
+# "Part 1 of 5" style numbering, used when there is no season marker.
+ALT_SEASON_PATTERN = re.compile(r"(?<![a-z0-9])(\d{1,2})[\s._-]*of[\s._-]*(\d{1,2})(?![a-z0-9])", re.I)
+
+SHOWS_MAP_FILENAME = "shows_map.ini"
 
 # --------------------------------------------------------------------------------
 # Public API
@@ -82,13 +105,13 @@ def get_show_map() -> configparser.ConfigParser:
     Returns:
         configparser.ConfigParser: Parsed configuration mapping show names to paths
     """
-    shows_map_path = Path(CONFIG.settings_path).parent.joinpath("shows_map.ini")
+    shows_map_path = _shows_map_path()
 
     if not shows_map_path.exists():
         log.info("No show_map.ini found. Creating one now...")
         make_shows_map()
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config.read(shows_map_path)
     return config
 
@@ -96,7 +119,8 @@ def get_show_map() -> configparser.ConfigParser:
 def parse_filename(filename: str) -> tuple[str | None, str | None]:
     """Extract show name and season/episode information from a filename.
 
-    Handles both standard (S01E01) and alternate (1 of 10) naming formats.
+    Standard markers (S01E01, 1x01, "season 1 episode 1") take precedence over the
+    alternate "1 of 10" format, so "Show.S01E05.Part.1.of.2" is episode 5, not 1.
 
     Args:
         filename: The filename to parse
@@ -106,45 +130,33 @@ def parse_filename(filename: str) -> tuple[str | None, str | None]:
 
     Example:
         >>> parse_filename("Show.Name.S01E02.mp4")
-        ('Show Name', 's01e02')
+        ('Show.Name', 's01e02')
     """
-    # Check for alternate season naming (e.g., "1 of 10")
+    tv_match = TV_PATTERN.search(filename)
+    if tv_match:
+        show_name = _clean_show_name(filename[: tv_match.start()])
+        return show_name, normalize_tv_format(tv_match.group())
+
     alt_season_match = match_for_altseason(filename)
     if alt_season_match:
-        show_name = filename.split(alt_season_match.group(0))[0].strip()
-        try:  # Test for series in name
-            show_name = show_name.split("series")[0].strip()
-        except IndexError:
-            log.error(f"Failed to split series from show name: {show_name}")
-        season_episode = _fix_season_episode(alt_season_match.group(0))
-        return show_name, season_episode
+        show_name = filename[: alt_season_match.start()]
+        show_name = re.split(r"(?<![a-z0-9])series(?![a-z0-9])", show_name, flags=re.I)[0]
+        show_name = re.sub(r"[\W_]*(?:part|episode|ep)[\W_]*$", "", show_name, flags=re.I)
+        return _clean_show_name(show_name), f"s01e{int(alt_season_match.group(1)):02}"
 
-    # Check for standard S##E## or S####E## format
-    match, match_text = match_for_tv(filename)
-    if match:
-        try:
-            show_name = filename.split(match_text)[0].strip()
-            season_episode = normalize_tv_format(match_text)
-            return show_name, season_episode
-        except IndexError:
-            log.warning(f"Malformed season/episode structure in filename: {filename}")
-            return None, None
-    else:
-        # No valid match found
-        return None, None
+    return None, None
 
 
 def match_for_tv(filename: str) -> tuple[bool, str | None]:
     """Match TV show episode patterns in filenames.
 
     Supports formats:
-    - S##E## (e.g., S02E05)
-    - S##E##E## (e.g., S03E08E09)
+    - S##E## (e.g., S02E05), including single-digit seasons (S1E05)
+    - S##E##E##, S##E##-E##, S##E##-## (multi-episode)
     - S####E## (e.g., S2023E01)
+    - S##E### (three-digit episodes, e.g., S00E201)
     - #x## (e.g., 1x01)
-    - season 01 episode 01
-    - season01 episode01
-    - season01episode01
+    - season 01 episode 01 / season01episode01
 
     Args:
         filename: Filename to check for TV show patterns
@@ -152,35 +164,7 @@ def match_for_tv(filename: str) -> tuple[bool, str | None]:
     Returns:
         tuple[bool, str | None]: (True, matched_text) if found, (False, None) if not found
     """
-    pattern = re.compile(
-        r"""
-        (?:
-            (?P<season>s\d{2,4})e(?P<episode_start>\d{2})e(?P<episode_end>\d{2})   # Matches S##E##E##
-        ) |
-        (?:
-            (?:^|[\W_])                     # Start of string or non-word boundary
-            (s\d{2,4})[\W_]*e(\d{2})        # Matches S##E## or S####E##
-            (?:$|[\W_])
-        ) |
-        (?:
-            (?:^|[\W_])                     # Start of string or non-word boundary
-            (\d{1,2})x(\d{2})              # Matches #x## format
-            (?:$|[\W_])
-        ) |
-        (?:
-            (?:^|[\W_])                     # Start of string or non-word boundary
-            season[\W_]*?(\d{2})[\W_]*?episode[\W_]*?(\d{2}) # Matches "season 01 episode 01" or variations
-            (?:$|[\W_])
-        ) |
-        (?:
-            (?:^|[\W_])                     # Start of string or non-word boundary
-            season(\d{2})episode(\d{2})     # Matches "season01episode01"
-            (?:$|[\W_])
-        )
-        """,
-        re.I | re.VERBOSE,
-    )
-    match = pattern.search(filename)
+    match = TV_PATTERN.search(filename)
     if match:
         return True, match.group()
     return False, None
@@ -196,11 +180,11 @@ def match_for_altseason(filename: str) -> re.Match | None:
         re.Match | None: Match object if pattern found, None otherwise
 
     Example:
-        >>> match_for_altseason("Episode 1 of 10.mp4")
-        <re.Match object; span=(8, 14), match='1 of 10'>
+        >>> match_for_altseason("Horizon.Part.1.of.5.mp4")
+        <re.Match object; span=(13, 19), match='1.of.5'>
     """
-    log.debug(f"Matching alternate season format: {filename} | Type: {type(filename)}")
-    return re.search(r"\b(\d{1,2})\s*of\s*(\d{1,2})\b", filename, re.I)
+    log.debug(f"Matching alternate season format: {filename}")
+    return ALT_SEASON_PATTERN.search(filename)
 
 
 def make_shows_map() -> None:
@@ -227,7 +211,7 @@ def make_shows_map() -> None:
         Show Name = /path/to/library/network/show_name
         Another Show = /path/to/library/network/another_show
     """
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     show_libraries = CONFIG.shows
     shows_dict = {}
 
@@ -246,7 +230,7 @@ def make_shows_map() -> None:
 
     config["Shows"] = shows_dict
 
-    shows_map_path = Path(CONFIG.settings_path).parent.joinpath("shows_map.ini")
+    shows_map_path = _shows_map_path()
     with open(shows_map_path, "w") as configfile:
         config.write(configfile)
 
@@ -260,38 +244,19 @@ def normalize_tv_format(season_episode: str) -> str:
         season_episode: String containing season/episode information
 
     Returns:
-        str: Normalized format (e.g., 's01e02' or 's03e08-e09')
+        str: Normalized format (e.g., 's01e02', 's00e201' or 's03e08-e09')
     """
-    pattern = re.compile(
-        r"""
-        (?P<season>s\d{2,4})e(?P<episode_start>\d{2})e(?P<episode_end>\d{2}) |
-        s(?P<season1>\d{2,4})e(?P<episode1>\d{2}) |
-        (?P<season2>\d{1,2})x(?P<episode2>\d{2}) |
-        season\s*(?P<season3>\d{1,4})\s*episode\s*(?P<episode3>\d{1,3}) |
-        season(?P<season4>\d{1,4})\s*episode(?P<episode4>\d{1,3}) |
-        season(?P<season5>\d{1,4})episode(?P<episode5>\d{1,3})
-        """,
-        re.I | re.VERBOSE,
-    )
+    match = TV_PATTERN.search(season_episode)
+    if not match:
+        log.debug("No normalization required.")
+        return season_episode
 
-    match = pattern.search(season_episode)
-    if match:
-        if match.group("season") and match.group("episode_start") and match.group("episode_end"):
-            season = match.group("season")
-            return f"{season}e{match.group('episode_start')}-e{match.group('episode_end')}"
-
-        season = next(
-            (match.group(g) for g in match.groupdict() if "season" in g and match.group(g)), None
-        )
-        episode = next(
-            (match.group(g) for g in match.groupdict() if "episode" in g and match.group(g)), None
-        )
-
-        if season and episode:
-            return f"s{int(season):02}e{int(episode):02}"
-
-    log.debug("No normalization required.")
-    return season_episode
+    season = match["season"] or match["x_season"] or match["long_season"]
+    episode = match["episode"] or match["x_episode"] or match["long_episode"]
+    normalized = f"s{int(season):02}e{int(episode):02}"
+    if match["episode_end"]:
+        normalized += f"-e{int(match['episode_end']):02}"
+    return normalized
 
 
 def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
@@ -304,35 +269,21 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
         tuple[list[Path], list[Path]]: Lists of movie and show paths respectively
 
     Notes:
-        - Deletes files matching patterns in CONFIG.files_to_delete
-        - Excludes files matching patterns in CONFIG.FILE_EXT_EXCLUDES
-        - Only processes files with extensions in CONFIG.valid_file_extensions
+        - Excludes files matching patterns in CONFIG.excluded_extensions
+        - Only processes files with extensions in CONFIG.valid_extensions
     """
     movies = []
     shows = []
-
-    # Update the lines to use the correct config attributes
-    files_to_delete = CONFIG.deletable_extensions
-    file_ext_excludes = CONFIG.excluded_extensions
-    valid_extensions = CONFIG.valid_extensions
 
     for file_obj in files_obj:
         file_name = file_obj.name
         file_path = Path(file_obj.path)
 
-        if not any(file_name.lower().endswith(ext) for ext in valid_extensions):
+        if not any(file_name.lower().endswith(ext) for ext in CONFIG.valid_extensions):
             log.debug(f"Skipping invalid file type: {file_path}")
             continue
 
-        if _should_delete(file_name, files_to_delete):
-            log.info(f"Deleting: {file_path}")
-            try:
-                os.remove(file_path)
-            except OSError as e:
-                log.warning(f"Failed to delete {file_path}: {e}")
-            continue
-
-        if _should_exclude(file_name, file_ext_excludes):
+        if should_exclude(file_name, CONFIG.excluded_extensions):
             log.debug(f"Skipping excluded file: {file_path}")
             continue
 
@@ -349,40 +300,28 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
 # --------------------------------------------------------------------------------
 # Private Methods
 # --------------------------------------------------------------------------------
-def _fix_season_episode(season_episode: str) -> str:
-    """Convert "# of #" format to 's01e##' format.
-
-    Args:
-        season_episode: String containing "# of #" pattern
-
-    Returns:
-        str: Formatted as 's01e##' where ## is the first number
-    """
-    episode = f"e{int(season_episode.split('of')[0]):02}"
-    return f"s01{episode}"
+def _clean_show_name(show_name: str) -> str:
+    """Trim whitespace and dangling separators left over from splitting a filename."""
+    return show_name.strip(" ._-")
 
 
-def _should_delete(file_name: str, files_to_delete: set) -> bool:
-    """Check if file should be deleted based on name patterns.
-
-    Args:
-        file_name: Name of file to check
-        files_to_delete: Set of patterns indicating files to delete
-
-    Returns:
-        bool: True if file matches any deletion pattern
-    """
-    return any(delete_item in file_name for delete_item in files_to_delete)
-
-
-def _should_exclude(file_name: str, file_ext_excludes: set) -> bool:
+def should_exclude(file_name: str, file_ext_excludes: set) -> bool:
     """Check if file should be excluded from processing.
 
+    Exclusions are name endings (".part", "sample.mkv"), so "the.party.1968.mkv"
+    is not mistaken for a partial download.
+
     Args:
         file_name: Name of file to check
-        FILE_EXT_EXCLUDES: Set of patterns indicating files to exclude
+        file_ext_excludes: Set of name endings indicating files to exclude
 
     Returns:
         bool: True if file matches any exclusion pattern
     """
-    return any(exclude_item in file_name for exclude_item in file_ext_excludes)
+    name = file_name.lower()
+    return any(name.endswith(exclude_item.lower()) for exclude_item in file_ext_excludes)
+
+
+def _shows_map_path() -> Path:
+    """Location of shows_map.ini: next to the active settings file."""
+    return Path(CONFIG.settings_path).parent.joinpath(SHOWS_MAP_FILENAME)

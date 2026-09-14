@@ -11,7 +11,6 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 
@@ -19,6 +18,7 @@ from filetools import CONFIG, naming_files
 from filetools.logger import setup_logger
 from filetools.moving_files import (
     clean_empty_dirs,
+    delete_malware,
     extract_from_src,
     move_movie_files,
     move_show_files,
@@ -98,9 +98,6 @@ def cli(
     log = setup_logger(name="filetools", level=log_level)
     log.debug("Python version: %s", sys.version)
 
-    # make/Update show_map
-    make_shows_map()
-
     try:
         work_dir = Path(path) if path else Path(CONFIG.default_source)
         if not work_dir.exists():
@@ -110,6 +107,9 @@ def cli(
         log.error(f"Error setting working directory: {e}")
         sys.exit(1)
     log.info("Path to work on: %s", work_dir)
+
+    # Fake downloads are removed on every run, whatever else was asked for
+    delete_malware(work_dir, debug)
 
     if extract_files:
         log.info("")
@@ -129,6 +129,7 @@ def cli(
         log.info("")
         log.info("------------------------------ Move Files To Libraries ------------------------------")
         log.info("")
+        make_shows_map()
         movies, shows = sort_media(dir_scan(work_dir, True))
         move_movie_files(movies, work_dir, debug)
         move_show_files(shows, work_dir, debug)
