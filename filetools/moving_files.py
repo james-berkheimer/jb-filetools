@@ -202,7 +202,8 @@ def move_show_files(shows: list[Path], working_directory: Path, debug: bool = Fa
             continue
 
         season_number = int(re.match(r"s(\d+)", season_episode).group(1))
-        dest = show_dir / _season_dir_name(show_dir, season_number) / show.name
+        dest_name = _episode_filename(show.name, show_name, show_dir)
+        dest = show_dir / _season_dir_name(show_dir, season_number) / dest_name
         log.debug(f"destination: {dest}")
         files_to_move[working_directory / show.name] = dest
 
@@ -255,6 +256,25 @@ def _choose_library(library_dict: dict[str, str], prompt: str) -> Path | None:
         choice = ask_multichoice(library_names, prompt)
         return Path(library_dict[choice])
     return Path(library_dict[library_names[0]])
+
+
+def _episode_filename(filename: str, show_name: str, show_dir: Path) -> str:
+    """Name an episode after the library folder it is moving into.
+
+    A show matched loosely keeps the name from the download otherwise, so
+    "lanterns_2026_s01e05.mkv" would sit beside "lanterns_s01e04.mkv" in "hbo/lanterns".
+
+    Args:
+        filename: Current episode file name, e.g. "lanterns_2026_s01e05.mkv"
+        show_name: Show name parsed from the file name, e.g. "lanterns_2026"
+        show_dir: Library folder the episode is moving into, e.g. ".../hbo/lanterns"
+
+    Returns:
+        str: The file name with its show name replaced by the folder name
+    """
+    if show_name == show_dir.name or not filename.startswith(show_name):
+        return filename
+    return show_dir.name + filename[len(show_name) :]
 
 
 def _get_empty_dirs(working_directory: Path) -> list[Path]:
