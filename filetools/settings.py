@@ -7,6 +7,23 @@ from typing import Any
 
 log = logging.getLogger("filetools")
 
+# Executables and fake archives that indexers pass off as episodes. Used when the
+# settings file predates the "malware" list, so the protection is always on.
+DEFAULT_MALWARE_EXTENSIONS = [
+    ".exe",
+    ".scr",
+    ".pif",
+    ".bat",
+    ".cmd",
+    ".msi",
+    ".lnk",
+    ".vbs",
+    ".js",
+    ".ps1",
+    ".jar",
+    ".zipx",
+]
+
 
 class AppConfig:
     """Load and manage application settings from a JSON configuration file."""
@@ -16,6 +33,7 @@ class AppConfig:
     valid_extensions: set[str]
     excluded_extensions: set[str]
     deletable_extensions: set[str]
+    malware_extensions: set[str]
     downloading_indicators: set[str]
     ignore_keywords: set[str]
     name_cleanup_flags: list[str]
@@ -49,6 +67,9 @@ class AppConfig:
         self.valid_extensions = set(extensions.get("valid", []))
         self.excluded_extensions = set(extensions.get("excluded", []))
         self.deletable_extensions = set(extensions.get("deletable", []))
+        self.malware_extensions = {
+            ext.lower() for ext in extensions.get("malware", DEFAULT_MALWARE_EXTENSIONS)
+        }
         self.downloading_indicators = set(keywords.get("downloading", []))
         self.ignore_keywords = set(keywords.get("ignore", []))
 

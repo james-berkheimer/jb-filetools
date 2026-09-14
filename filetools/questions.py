@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 log = logging.getLogger("filetools")
 
@@ -65,11 +64,12 @@ def ask_bool(question: str, default_value: bool | None = None) -> bool | None:
         log.warning(f"Invalid input: {user_input}. Expected 'y' or 'n'.")
 
 
-def ask_multichoice(choices: list[str]) -> str:
+def ask_multichoice(choices: list[str], prompt: str = "Choose an option") -> str:
     """Present numbered menu of choices and get user selection.
 
     Args:
         choices: List of options to present to user
+        prompt: Question displayed above the numbered options
 
     Returns:
         str: The selected choice text
@@ -78,8 +78,8 @@ def ask_multichoice(choices: list[str]) -> str:
         QuestionError: If choices list is empty
 
     Example:
-        >>> ask_multichoice(["apple", "banana", "orange"])
-        Choose an option (1, 2, 3):
+        >>> ask_multichoice(["apple", "banana", "orange"], "Pick a fruit")
+        Pick a fruit (1, 2, 3):
         1) apple
         2) banana
         3) orange
@@ -91,7 +91,7 @@ def ask_multichoice(choices: list[str]) -> str:
 
     choice_dict: dict = {str(i + 1): choice for i, choice in enumerate(choices)}
 
-    log.question(f"Choose an option ({', '.join(choice_dict.keys())}):")
+    log.question(f"{prompt} ({', '.join(choice_dict.keys())}):")
     for key, value in choice_dict.items():
         log.info(f"{key}) {value}")
 
@@ -103,7 +103,6 @@ def ask_multichoice(choices: list[str]) -> str:
             return choice_dict[user_input]
 
         log.warning(f"Invalid choice: {user_input}. Expected one of {list(choice_dict.keys())}.")
-        log.warning(f"Invalid choice: {user_input}. Please enter a valid number from the list.")
 
 
 def ask_text_input(qstring: str) -> str:

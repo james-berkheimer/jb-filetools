@@ -36,7 +36,6 @@ exclude = [
     "vendor",
     "generated",
     "_redunant/",
-    "filetools/_scratch.py",
 ]
 
 
@@ -67,7 +66,6 @@ ignore = [
     "E501",   # Line too long
     "E722",   # Bare except
     "N802",   # Function name should be lowercase
-    "F401",   # Unused imports
     "ISC001", # Implicit string concatenation
     "E721",   # Type comparison using type()
     "D100",   # Missing docstring in public module
@@ -78,7 +76,7 @@ ignore = [
 
 # Fix settings
 fixable = ["ALL"]
-unfixable = ["Q000", "F401"]
+unfixable = ["Q000"]
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
@@ -96,7 +94,7 @@ convention = "google"
 max-complexity = 10
 
 [lint.isort]
-known-first-party = ["jb_filetools"]
+known-first-party = ["filetools"]
 section-order = [
     "future",
     "standard-library",
