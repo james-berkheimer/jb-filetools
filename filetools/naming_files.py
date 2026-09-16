@@ -5,7 +5,7 @@ import traceback
 from pathlib import Path
 
 from filetools import CONFIG
-from filetools.utils import dir_scan, parse_filename
+from filetools.utils import detect_video_extension, dir_scan, parse_filename
 
 log = logging.getLogger("filetools")
 
@@ -69,11 +69,18 @@ def rename_files(target_dir: Path, debug: bool = False) -> None:
             continue
 
         file_ext = os.path.splitext(file_obj.name)[1].lower()
-        if file_ext in CONFIG.valid_extensions and file_ext not in CONFIG.excluded_extensions:
-            try:
-                _rename(file_obj, debug)
-            except Exception as e:
-                log.error(f"Failed to rename {file_obj.name}: {e}\n{traceback.format_exc()}")
+        if file_ext in CONFIG.excluded_extensions:
+            continue
+        if file_ext not in CONFIG.valid_extensions:
+            # Downloads sometimes have no extension; identify them by their contents
+            file_ext = detect_video_extension(file_obj.path)
+            if not file_ext:
+                continue
+            log.info(f"{file_obj.name} has no video extension; its contents are {file_ext}")
+        try:
+            _rename(file_obj, debug, file_ext)
+        except Exception as e:
+            log.error(f"Failed to rename {file_obj.name}: {e}\n{traceback.format_exc()}")
 
 
 # --------------------------------------------------------------------------------
@@ -196,12 +203,13 @@ def _is_properly_formatted(file_name: str) -> bool:
     return bool(_MOVIE_PATTERN.match(file_name) or _SHOW_PATTERN.match(file_name))
 
 
-def _rename(file_obj: os.DirEntry | Path, debug: bool = False) -> None:
+def _rename(file_obj: os.DirEntry | Path, debug: bool = False, extension: str | None = None) -> None:
     """Rename a file using standardized naming conventions.
 
     Args:
         file_obj: File object to rename
         debug: If True, run in simulation mode without making actual changes
+        extension: Extension to give the file, when its own is missing or wrong
 
     Raises:
         OSError: If rename operation fails
@@ -210,7 +218,7 @@ def _rename(file_obj: os.DirEntry | Path, debug: bool = False) -> None:
         log.info(f"Skipping.....{file_obj.name} (already properly formatted)")
         return
 
-    new_name = _target_name(file_obj.name)
+    new_name = _target_name(file_obj.name, extension)
     if new_name == file_obj.name:
         return
 
@@ -295,16 +303,19 @@ def _should_delete(file_name: str) -> bool:
     return file_name in CONFIG.deletable_extensions or ext in CONFIG.deletable_extensions
 
 
-def _target_name(file_name: str) -> str:
+def _target_name(file_name: str, extension: str | None = None) -> str:
     """Compute the standardized name for a file (without touching the filesystem).
 
     Args:
         file_name: Current file name, including extension
+        extension: Extension to use instead of the file name's own
 
     Returns:
         str: The standardized file name
     """
     filename_wo_ext, file_ext = os.path.splitext(file_name.lower())
+    if extension and file_ext != extension:
+        filename_wo_ext, file_ext = file_name.lower().removesuffix(extension), extension
     filename_wo_ext = _SITE_PREFIX.sub("", filename_wo_ext)
     show_name, season_episode = parse_filename(filename_wo_ext)
 

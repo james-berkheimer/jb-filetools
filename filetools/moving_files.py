@@ -18,7 +18,14 @@ from pathlib import Path
 from filetools import CONFIG
 from filetools.questions import ask_bool, ask_multichoice, ask_text_input
 from filetools.show_matching import ShowCatalog, normalize_show_name
-from filetools.utils import dir_scan, get_show_map, parse_filename, should_exclude
+from filetools.utils import (
+    detect_video_extension,
+    dir_scan,
+    get_show_map,
+    is_executable,
+    parse_filename,
+    should_exclude,
+)
 
 log = logging.getLogger("filetools")
 
@@ -295,9 +302,7 @@ def _get_empty_dirs(working_directory: Path) -> list[Path]:
         if _should_skip_directory(dir_obj):
             continue
         dir_path = Path(dir_obj.path)
-        if not any(
-            _is_downloading(f) or _is_extractable(f.relative_to(dir_path)) for f in _walk_files(dir_path)
-        ):
+        if not any(_is_downloading(f) or _is_extractable(f, dir_path) for f in _walk_files(dir_path)):
             dirs_to_delete.append(dir_path)
     return dirs_to_delete
 
@@ -329,7 +334,7 @@ def _get_files_to_extract(working_directory: Path) -> dict[Path, Path]:
             continue
 
         for file_path in files:
-            if not _is_extractable(file_path.relative_to(dir_path)):
+            if not _is_extractable(file_path, dir_path):
                 log.debug(f"\tNot extracting: {file_path}")
                 continue
             dest = working_directory / file_path.name
@@ -351,14 +356,18 @@ def _is_downloading(file_path: Path) -> bool:
     return any(name.endswith(indicator) for indicator in CONFIG.downloading_indicators)
 
 
-def _is_extractable(relative_path: Path) -> bool:
+def _is_extractable(file_path: Path, torrent_dir: Path) -> bool:
     """True for a finished video that isn't a sample, trailer or preview.
 
     Args:
-        relative_path: Path of the file relative to its download folder, so that
-            "Sample/show.mkv" is recognised as a sample by its folder name.
+        file_path: The file to check
+        torrent_dir: Its download folder, so that "Sample/show.mkv" is recognised
+            as a sample by its folder name.
     """
-    if relative_path.suffix.lower() not in CONFIG.valid_extensions:
+    relative_path = file_path.relative_to(torrent_dir)
+    if relative_path.suffix.lower() not in CONFIG.valid_extensions and not detect_video_extension(
+        file_path
+    ):
         return False
     if should_exclude(relative_path.name, CONFIG.excluded_extensions):
         return False
@@ -367,8 +376,14 @@ def _is_extractable(relative_path: Path) -> bool:
 
 
 def _is_malware(file_path: Path) -> bool:
-    """True for executables and fake archives, e.g. "Show.S01E01.1080p.mkv.exe"."""
-    return file_path.name.lower().endswith(tuple(CONFIG.malware_extensions))
+    """True for executables and fake archives, e.g. "Show.S01E01.1080p.mkv.exe".
+
+    The contents are checked as well as the name, because fakes also arrive with a
+    misleading extension or none at all.
+    """
+    if file_path.name.lower().endswith(tuple(CONFIG.malware_extensions)):
+        return True
+    return is_executable(file_path)
 
 
 def _library_label(show_dir: Path) -> str:

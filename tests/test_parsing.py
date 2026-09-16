@@ -2,7 +2,13 @@ import os
 
 import pytest
 
-from filetools.utils import match_for_tv, parse_filename, sort_media
+from filetools.utils import (
+    detect_video_extension,
+    is_executable,
+    match_for_tv,
+    parse_filename,
+    sort_media,
+)
 
 
 @pytest.mark.parametrize(
@@ -75,3 +81,39 @@ def test_sort_media_splits_movies_and_shows_without_deleting(tmp_path):
         "show.sample.mkv",
         "the.party.1968.mkv",
     ]
+
+
+MKV_HEADER = b"\x1a\x45\xdf\xa3" + b"\x00" * 60
+MP4_HEADER = b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 60
+AVI_HEADER = b"RIFF\x00\x00\x00\x00AVI LIST" + b"\x00" * 60
+PE_HEADER = b"MZ\x90\x00\x03\x00\x00\x00" + b"\x00" * 60
+ELF_HEADER = b"\x7fELF\x02\x01\x01\x00" + b"\x00" * 60
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        (MKV_HEADER, ".mkv"),
+        (MP4_HEADER, ".mp4"),
+        (b"\x00\x00\x00\x18ftypqt  " + b"\x00" * 60, ".mov"),
+        (AVI_HEADER, ".avi"),
+        (b"\x00\x00\x01\xba" + b"\x00" * 60, ".mpg"),
+        (PE_HEADER, None),
+        (b"just some text", None),
+        (b"", None),
+    ],
+)
+def test_detect_video_extension(tmp_path, header, expected):
+    path = tmp_path / "no_extension"
+    path.write_bytes(header)
+    assert detect_video_extension(path) == expected
+
+
+def test_is_executable(tmp_path):
+    (tmp_path / "pe").write_bytes(PE_HEADER)
+    (tmp_path / "elf").write_bytes(ELF_HEADER)
+    (tmp_path / "video").write_bytes(MKV_HEADER)
+    assert is_executable(tmp_path / "pe")
+    assert is_executable(tmp_path / "elf")
+    assert not is_executable(tmp_path / "video")
+    assert not is_executable(tmp_path / "missing")
