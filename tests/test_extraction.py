@@ -92,3 +92,23 @@ def test_empty_dirs(tmp_path):
         "Downloading/Season 01/Show.S01E01.mkv.part",
     )
     assert _get_empty_dirs(tmp_path) == [tmp_path / "Extracted", tmp_path / "OnlySample"]
+
+
+MKV_HEADER = b"\x1a\x45\xdf\xa3" + b"\x00" * 60
+
+
+def test_extensionless_video_is_extracted(tmp_path):
+    (tmp_path / "Pack").mkdir()
+    (tmp_path / "Pack/Show S01E06 1080p WEB-DL x265 NTb").write_bytes(MKV_HEADER)
+
+    assert list(_get_files_to_extract(tmp_path).values()) == [
+        tmp_path / "Show S01E06 1080p WEB-DL x265 NTb"
+    ]
+
+
+def test_folder_holding_only_an_extensionless_video_is_not_empty(tmp_path):
+    # Without content detection this folder looked empty and would have been deleted.
+    (tmp_path / "Pack").mkdir()
+    (tmp_path / "Pack/Show S01E06 1080p WEB-DL x265 NTb").write_bytes(MKV_HEADER)
+
+    assert _get_empty_dirs(tmp_path) == []

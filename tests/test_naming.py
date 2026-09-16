@@ -109,3 +109,20 @@ def test_rename_files(tmp_path):
     rename_files(tmp_path)
 
     assert [p.name for p in tmp_path.iterdir()] == ["ludwig_2024_s02e04.mkv"]
+
+
+MKV_HEADER = b"\x1a\x45\xdf\xa3" + b"\x00" * 60
+
+
+def test_extensionless_video_is_named_from_its_contents(tmp_path):
+    (tmp_path / "Lanterns S01E06 1080p WEB-DL DDP5 1 x265 NTb").write_bytes(MKV_HEADER)
+
+    rename_files(tmp_path)
+
+    assert [p.name for p in tmp_path.iterdir()] == ["lanterns_s01e06.mkv"]
+
+
+def test_non_video_without_extension_is_left_alone(tmp_path):
+    (tmp_path / "readme").write_text("nothing to see")
+    rename_files(tmp_path)
+    assert [p.name for p in tmp_path.iterdir()] == ["readme"]

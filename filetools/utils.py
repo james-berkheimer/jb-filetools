@@ -46,9 +46,55 @@ ALT_SEASON_PATTERN = re.compile(r"(?<![a-z0-9])(\d{1,2})[\s._-]*of[\s._-]*(\d{1,
 
 SHOWS_MAP_FILENAME = "shows_map.ini"
 
+# Leading bytes identifying video containers, for downloads that arrive with no
+# extension. Keyed by the extension the file should be given.
+VIDEO_SIGNATURES = (
+    (".mkv", lambda h: h[:4] == b"\x1a\x45\xdf\xa3"),  # Matroska/WebM (EBML)
+    (".mov", lambda h: h[4:8] == b"ftyp" and h[8:10] == b"qt"),  # QuickTime
+    (".mp4", lambda h: h[4:8] == b"ftyp"),  # MP4 and friends
+    (".avi", lambda h: h[:4] == b"RIFF" and h[8:12] == b"AVI "),  # AVI
+    (".mpg", lambda h: h[:4] == b"\x00\x00\x01\xba"),  # MPEG program stream
+)
+
+# Leading bytes of Windows, Linux and macOS executables. Fake episodes are often
+# executables, whatever the file is named.
+EXECUTABLE_SIGNATURES = (
+    b"MZ",  # Windows PE
+    b"\x7fELF",  # Linux ELF
+    b"\xfe\xed\xfa\xce",
+    b"\xfe\xed\xfa\xcf",  # Mach-O
+    b"\xce\xfa\xed\xfe",
+    b"\xcf\xfa\xed\xfe",  # Mach-O, byte-swapped
+)
+
 # --------------------------------------------------------------------------------
 # Public API
 # --------------------------------------------------------------------------------
+
+
+def detect_video_extension(file_path: str | Path) -> str | None:
+    """Work out which video container a file is from its own first bytes.
+
+    Downloads occasionally arrive with no extension, which would otherwise make
+    them invisible to every step of the tool.
+
+    Args:
+        file_path: File to inspect
+
+    Returns:
+        str | None: The extension the file should have, or None if it is not a
+        recognised video container.
+    """
+    header = _read_header(file_path)
+    for extension, matches in VIDEO_SIGNATURES:
+        if matches(header):
+            return extension
+    return None
+
+
+def is_executable(file_path: str | Path) -> bool:
+    """True if a file's first bytes mark it as a Windows, Linux or macOS executable."""
+    return _read_header(file_path).startswith(EXECUTABLE_SIGNATURES)
 
 
 def dir_scan(scan_path: str | Path, get_files: bool = False) -> list[os.DirEntry]:
@@ -300,6 +346,16 @@ def sort_media(files_obj: list[os.DirEntry]) -> tuple[list[Path], list[Path]]:
 # --------------------------------------------------------------------------------
 # Private Methods
 # --------------------------------------------------------------------------------
+def _read_header(file_path: str | Path) -> bytes:
+    """First bytes of a file, or empty if it cannot be read."""
+    try:
+        with open(file_path, "rb") as f:
+            return f.read(12)
+    except OSError as e:
+        log.debug(f"Could not read {file_path}: {e}")
+        return b""
+
+
 def _clean_show_name(show_name: str) -> str:
     """Trim whitespace and dangling separators left over from splitting a filename."""
     return show_name.strip(" ._-")
