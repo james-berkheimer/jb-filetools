@@ -126,3 +126,34 @@ def test_non_video_without_extension_is_left_alone(tmp_path):
     (tmp_path / "readme").write_text("nothing to see")
     rename_files(tmp_path)
     assert [p.name for p in tmp_path.iterdir()] == ["readme"]
+
+
+@pytest.mark.parametrize(
+    ("original", "expected"),
+    [
+        # The real case: filed as a movie, "bbc_mars_uncovered_ancient_god_of_war_(2019).mkv"
+        (
+            "BBC.Mars.Uncovered.Ancient.God.of.War.2019.HDTV.x264.AAC.MVGroup.org.mkv",
+            "mars_uncovered_ancient_god_of_war_s01e01.mkv",
+        ),
+        ("PBS.Mussolini.The.First.Fascist.2022.720p.WEB.mkv", "mussolini_the_first_fascist_s01e01.mkv"),
+        ("ITV.The.Queen.at.90.1080p.HDTV.x264.mkv", "the_queen_at_90_s01e01.mkv"),
+        ("Secrets.of.the.Castle.MVGroup.org.mkv", "secrets_of_the_castle_s01e01.mkv"),
+        # Already-misfiled names are corrected on the next run
+        (
+            "bbc_mars_uncovered_ancient_god_of_war_(2019).mkv",
+            "mars_uncovered_ancient_god_of_war_s01e01.mkv",
+        ),
+        # Episodes and ordinary movies are unaffected
+        ("Ch4.Grand.Designs.S24E03.1080p.HDTV.H264-DARKFLiX[eztv.re].mkv", "grand_designs_s24e03.mkv"),
+        ("Alien.Romulus.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX].mp4", "alien_romulus_(2024).mp4"),
+        (
+            "The.Shitheads.2026.1080p.WEBRip.x264.AAC5.1-[YTS.GG - YTS.BZ].mp4",
+            "the_shitheads_(2026).mp4",
+        ),
+    ],
+)
+def test_one_off_documentaries_are_named_as_a_single_episode(original, expected):
+    assert _target_name(original) == expected
+    assert _is_properly_formatted(expected)
+    assert _target_name(expected) == expected

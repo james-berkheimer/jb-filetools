@@ -18,6 +18,15 @@ log = logging.getLogger("filetools")
 UHD_TAGS = {"2160p", "4k", "uhd"}
 HDR_TAGS = {"hdr", "hdr10", "hdr10+", "hdr10plus", "dv", "dovi"}
 
+# Release groups that only publish documentaries.
+DOCUMENTARY_GROUPS = {"mvgroup"}
+
+# Where the title ends in a release name with no episode number or year.
+_RELEASE_TAG = re.compile(
+    r"(?<![a-z0-9])(?:\d{3,4}p|hdtv|pdtv|web(?:[-_.]?(?:dl|rip))?|bluray|x26[45]|h[._]?26[45]|hevc|aac|mvgroup)(?![a-z0-9])",
+    re.I,
+)
+
 # Torrent-site prefixes such as "www.Example.org - " or "[ www.Example.org ] ".
 _SITE_PREFIX = re.compile(r"^\s*\[?\s*www\.[^\s\]]+\s*\]?\s*-?\s*", re.I)
 
@@ -203,6 +212,33 @@ def _is_properly_formatted(file_name: str) -> bool:
     return bool(_MOVIE_PATTERN.match(file_name) or _SHOW_PATTERN.match(file_name))
 
 
+def _one_off_documentary_title(filename_wo_ext: str) -> str | None:
+    """Title of a single documentary with no episode number, or None if it isn't one.
+
+    These would otherwise be filed as movies. They are recognised by a broadcaster
+    prefix ("BBC.Mars.Uncovered.2019...") or a documentary-only release group.
+
+    Args:
+        filename_wo_ext: File name without its extension
+
+    Returns:
+        str | None: The sanitized title, e.g. "mars_uncovered_ancient_god_of_war"
+    """
+    tokens = re.split(r"[^a-z0-9]+", filename_wo_ext.lower())
+    broadcasters = {flag.lower() for flag in CONFIG.name_cleanup_flags}
+    if tokens[0] not in broadcasters and not DOCUMENTARY_GROUPS & set(tokens):
+        return None
+
+    end = len(filename_wo_ext)
+    year = _get_year(filename_wo_ext)
+    if year:
+        end = filename_wo_ext.rfind(year)
+    tag = _RELEASE_TAG.search(filename_wo_ext)
+    if tag:
+        end = min(end, tag.start())
+    return _sanitize_show_name(filename_wo_ext[:end].rstrip(" ._-([")) or None
+
+
 def _rename(file_obj: os.DirEntry | Path, debug: bool = False, extension: str | None = None) -> None:
     """Rename a file using standardized naming conventions.
 
@@ -319,15 +355,21 @@ def _target_name(file_name: str, extension: str | None = None) -> str:
     filename_wo_ext = _SITE_PREFIX.sub("", filename_wo_ext)
     show_name, season_episode = parse_filename(filename_wo_ext)
 
+    is_4k, is_hdr = _detect_flags(filename_wo_ext)
+    flags = [flag for flag, present in (("4K", is_4k), ("hdr", is_hdr)) if present]
+    flags_name = f"_[{'_'.join(flags)}]" if flags else ""
+
     if show_name and season_episode:
-        is_4k, is_hdr = _detect_flags(filename_wo_ext)
-        flags = [flag for flag, present in (("4K", is_4k), ("hdr", is_hdr)) if present]
-        flags_name = f"_[{'_'.join(flags)}]" if flags else ""
         return _format_tv_show_name(
             _sanitize_show_name(show_name),
             _sanitize_season_episode(season_episode),
             flags_name,
             file_ext,
         )
+
+    # A single documentary is filed like the others: as episode 1 of its own show
+    documentary = _one_off_documentary_title(filename_wo_ext)
+    if documentary:
+        return _format_tv_show_name(documentary, "s01e01", flags_name, file_ext)
 
     return _format_movie_name(filename_wo_ext, file_ext)
