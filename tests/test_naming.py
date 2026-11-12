@@ -126,3 +126,38 @@ def test_non_video_without_extension_is_left_alone(tmp_path):
     (tmp_path / "readme").write_text("nothing to see")
     rename_files(tmp_path)
     assert [p.name for p in tmp_path.iterdir()] == ["readme"]
+
+
+@pytest.mark.parametrize(
+    ("original", "expected"),
+    [
+        # Documentary films with no episode number are movies, whatever their
+        # broadcaster tag or release group (#26 wrongly filed these as s01e01)
+        (
+            "The.Nobles.Of.Prehistory.2021.WEB.x264.AAC.MVGroup.org.mkv",
+            "the_nobles_of_prehistory_(2021).mkv",
+        ),
+        (
+            "The.Oldest.Person.in.the.World.2026.1080p.x265.AAC.MVGroup.org.mkv",
+            "the_oldest_person_in_the_world_(2026).mkv",
+        ),
+        ("pbs_mussolini_the_first_fascist_(2022).mkv", "pbs_mussolini_the_first_fascist_(2022).mkv"),
+        (
+            "mars_uncovered_ancient_god_of_war_(2019).mkv",
+            "mars_uncovered_ancient_god_of_war_(2019).mkv",
+        ),
+        # Ordinary movies and episodes
+        ("Alien.Romulus.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX].mp4", "alien_romulus_(2024).mp4"),
+        (
+            "The.Shitheads.2026.1080p.WEBRip.x264.AAC5.1-[YTS.GG - YTS.BZ].mp4",
+            "the_shitheads_(2026).mp4",
+        ),
+        (
+            "Cunk on Cinema S01E01 1080p iP WEB-DL AAC2 0 H 264-RAWR[EZTVx.to].mkv",
+            "cunk_on_cinema_s01e01.mkv",
+        ),
+    ],
+)
+def test_files_without_an_episode_number_are_movies(original, expected):
+    assert _target_name(original) == expected
+    assert _target_name(expected) == expected
