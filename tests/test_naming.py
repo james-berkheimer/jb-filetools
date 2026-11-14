@@ -15,6 +15,7 @@ REAL_NAMES = [
         "Shogun.2024.S01E10.A.Dream.of.a.Dream.2160p.DSNP.WEB-DL.DDP5.1.DV.HDR.H.265-NTb.mkv",
         "shogun_2024_s01e10_[4k_hdr].mkv",
     ),
+    ("Odd Couple S1E7 (I Do, I Don't) .mp4", "odd_couple_s01e07.mp4"),
     ("the.venture.bros.s00e201.deep.inside.astrobase.go.mkv", "the_venture_bros_s00e201.mkv"),
     ("Ch4.Grand.Designs.S24E03.1080p.HDTV.H264-DARKFLiX[eztv.re].mkv", "grand_designs_s24e03.mkv"),
     (
@@ -38,6 +39,17 @@ REAL_NAMES = [
 @pytest.mark.parametrize(("original", "expected"), REAL_NAMES)
 def test_target_name(original, expected):
     assert _target_name(original) == expected
+
+
+@pytest.mark.parametrize(
+    ("misnamed", "expected"),
+    [
+        ("odd_couple_s1e1_the_laundry_orgy).mp4", "odd_couple_s01e01.mp4"),
+        ("odd_couple_s4e7_that_is_the_army_mrs__madison).mp4", "odd_couple_s04e07.mp4"),
+    ],
+)
+def test_single_digit_episodes_left_misnamed_by_older_versions_are_repaired(misnamed, expected):
+    assert _target_name(misnamed) == expected
 
 
 @pytest.mark.parametrize("renamed", [expected for _, expected in REAL_NAMES])

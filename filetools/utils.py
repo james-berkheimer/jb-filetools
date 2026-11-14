@@ -28,7 +28,7 @@ TV_PATTERN = re.compile(
     r"""
     (?<![a-z0-9])
     (?:
-        s(?P<season>\d{1,4})[\W_]*e(?P<episode>\d{2,3})       # S01E01, S2018E01, s00e201
+        s(?P<season>\d{1,4})[\W_]*e(?P<episode>\d{1,3})       # S01E01, S1E1, S2018E01, s00e201
         (?:(?:[-_]?e|-)(?P<episode_end>\d{2,3}))?             # S01E01E02, S01E01-E02, S01E01-02
       |
         (?P<x_season>\d{1,2})x(?P<x_episode>\d{2,3})          # 1x01
