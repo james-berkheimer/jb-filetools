@@ -32,6 +32,8 @@ from filetools.utils import (
         ("Show.S01E01-1080p", ("Show", "s01e01")),
         # Other season/episode styles
         ("Show.S1E05", ("Show", "s01e05")),
+        ("Odd Couple S1E1 (The Laundry Orgy)", ("Odd Couple", "s01e01")),
+        ("odd_couple_s1e7_i_do,_i_dont)_", ("odd_couple", "s01e07")),
         ("Only.Murders.4x02", ("Only.Murders", "s04e02")),
         ("Show Season 02 Episode 03", ("Show", "s02e03")),
         ("frontline - S2018E18", ("frontline", "s2018e18")),
